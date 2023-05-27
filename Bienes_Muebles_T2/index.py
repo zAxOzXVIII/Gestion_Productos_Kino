@@ -24,7 +24,7 @@ class Window:
         boton_admin = ttk.Button(self.window, text="Iniciar Sesion").grid(row=1, column=1)
         
         Label(self.window, text="Sesion supervisor").grid(row=2, column=0)
-        boton_sup = ttk.Button(self.window, text="Iniciar Sesion").grid(row=2, column=1)
+        boton_sup = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_sup).grid(row=2, column=1)
         
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.public_main).grid(row=3, column=1)
@@ -72,7 +72,7 @@ class Window:
         img_tk = ImageTk.PhotoImage(image_re)
         # obtener numero de filas
         num_filas = self.window.grid_size()[1]
-        print(self.window.grid_size())
+        # print(self.window.grid_size()) -> imprime la tupla de size
         # label image
         
         lbl_img = Label(self.window, image=img_tk)
@@ -120,11 +120,18 @@ class Window:
         # asignando la query sql
         sql = "SELECT nombre_area, id_area FROM areas_trabajo_kino WHERE codigo_zona = ?"
         
-        fetch = self.run_query(sql, (self.code.get(), ))
-        # imprimiendo valores
-        for row in fetch:
-            name = row[0]
-            ide = row[1]
+        try:
+            fetch = self.run_query(sql, (self.code.get(), ))
+            # imprimiendo valores
+            for row in fetch:
+                name = row[0]
+                ide = row[1]
+        except IndexError as E:
+            msg = f"Se ha detectado un error: {E}"
+            print(fetch)
+            return messagebox.showerror(title="Mensaje del sistema",
+                                message=msg)
+        
         
         if len(fetch) > 0:
             msg = f"Sector {name}, ID {ide} del area"
@@ -188,7 +195,113 @@ class Window:
         self.desc_item.delete(0, END)
         self.valor.delete(0, END)
         self.observ.delete(0, END)
-
+    
+    def toplevel_login_sup(self):
+        self.sesion_level = Toplevel()
+        self.sesion_level.title("Inicio de sesion del supervisor de area")
+        Label(self.sesion_level, text="Sesion de Supervisores").grid(row=0, column=0, columnspan=2)
+        Label(self.sesion_level, text="Para verificar si tiene permisos\ncomo supervisor digite su numero de cedula").grid(row=1, column=0)
+        ci_sesion = Entry(self.sesion_level)
+        ci_sesion.grid(row=1, column=1)
+        ttk.Button(self.sesion_level, text="Cargar data", command= lambda: self.sesion_sup_ci(ci_sesion.get())).grid(row=2, column=0, columnspan=2)
+    
+    def sesion_sup_ci(self, ci):
+        query = "SELECT * FROM supervisor_area_kino WHERE cedula = ?"
+        parameters = (ci, )
+        fetch = self.run_query(query, parameters)
+        if(len(fetch)<=0):
+            messagebox.showwarning(title="Error en la data",
+                                    message="No se encontraron registros con esta cedula")
+        else:
+            print(f"fetch[0][0] {fetch[0][0]}")
+            query2 = "SELECT * FROM supervisor_sesion WHERE id_supervisor = ?"
+            parameters2 = (fetch[0][0], )
+            fetch2 = self.run_query(query2, parameters2)
+            # print(fetch2) -> testeo
+            if len(fetch2) <= 0: messagebox.showwarning("Mensaje de sesion", "No tiene permisos para iniciar sesion")
+            else:
+                messagebox.showinfo(title="Mensaje de sesion",
+                                        message=f"El usuario {fetch[0][1]} si tiene permisos, favor digite su contraseña")
+                # limpiamos pantalla Top_level
+                for widget in self.sesion_level.winfo_children():
+                    widget.destroy()
+                # Generamos una nueva interfaz para ingresar contraseña
+                Label(self.sesion_level, text=f"Digite la contraseña, usuario: {fetch[0][1]}").grid(row=0, column=0, pady=25)
+                password_sup = Entry(self.sesion_level)
+                password_sup.grid(row=0, column=1, pady=25)
+                ttk.Button(self.sesion_level, text="Ingresar", command= lambda : self.log_sesion_sup(password_sup.get())).grid(row=1, column=0, columnspan=2, pady=5)
+                
+    
+    def log_sesion_sup(self, password):
+        query = "SELECT id_supervisor, clave_sup FROM supervisor_sesion WHERE clave_sup = ?"
+        parameters = (password, )
+        fetch = self.run_query(query, parameters)
+        print(fetch)
+        
+        if len(fetch) <= 0:
+            messagebox.showwarning("Alerta de contraseña", "No coincide su contraseña con los registros")
+        else:
+            # asignando id supervisor
+            id_sup = fetch[0][0]
+            messagebox.showinfo("Mensaje del sistema", "Bienvenido, su sesion a sido verificada con exito")
+            self.sesion_level.destroy()
+            self.main_sup_panel(id_sup)
+    
+    def main_sup_panel(self, id_sup):
+        # Limpiamos pantalla
+        self.limpiar_ventana()
+        # Recopilando data del id sesion
+        query = "SELECT * FROM supervisor_area_kino WHERE id_supervisor = ?"
+        parameters = (id_sup, )
+        fetch = self.run_query(query, parameters)
+        print(fetch)
+        name = fetch[0][1]
+        
+        Label(self.window, text=f"Supervisor encargado {name}").grid(row=0, column=0, columnspan=5, pady=10, padx=25)
+        self.tablero_sup = ttk.Treeview(self.window, height=10)
+        # asignando en main window
+        self.tablero_sup.grid(row=1, column=0, columnspan=5)
+        # entablando heading
+        self.tablero_sup["columns"] = ("col0", "col1", "col2", "col3", "col4")
+        # asignando valores a las columnas
+        self.tablero_sup.heading(column = "col0", text="Cantidad")
+        self.tablero_sup.heading(column = "col1", text="Numero de consultas")
+        self.tablero_sup.heading(column = "col2", text="Descripcion del item")
+        self.tablero_sup.heading(column = "col3", text="Valor")
+        self.tablero_sup.heading(column = "col4", text="Observacion")
+        # Ajustar columnas al contenido
+        for columna in self.tablero_sup["columns"]:
+            self.tablero_sup.column(columna, width=100, minwidth=50, anchor=CENTER)
+        # Rellenar de datos las filas
+        query2 = "SELECT * FROM areas_trabajo_kino WHERE id_supervisor = ?"
+        parameters2 = (id_sup, )
+        fetch2 = self.run_query(query2, parameters2)
+        # asignando valores
+        id_area = []
+        nombre_area = []
+        codigo_zona = []
+        for row in fetch2:
+            id_area.append(row[0])
+            nombre_area.append(row[1])
+            codigo_zona.append(row[2])
+        # funcion
+        self.rellenar_tabla_sup(id_area)
+        # Botones
+        ttk.Button(self.window, text="Actualizar Datos").grid(row=2, column=0)
+        ttk.Button(self.window, text="Generar Codigo Qr").grid(row=2, column=1)
+        
+    def rellenar_tabla_sup(self, id_area = []):
+        # limpiar data
+        valores = self.tablero_sup.get_children()
+        for elemento in valores:
+            self.tablero_sup.delete(elemento)
+        # llenando data
+        for area in id_area:
+            query = "SELECT * FROM bienes_por_zona WHERE id_area = ?"
+            parameters = (area, )
+            fetch = self.run_query(query, parameters)
+            for row in fetch:
+                self.tablero_sup.insert("", "end", text=row[0], values=(row[2], row[3], row[4], row[5], row[6]))
 
 # Inicializacion de la interfaz Tk
 window = Tk()
