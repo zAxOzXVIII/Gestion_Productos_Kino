@@ -9,6 +9,11 @@ from PIL import ImageTk, Image
 import os
 # libreria de BD MariaDB
 import mariadb as mdb
+# Libreria Qrcode
+import qrcode as qrc
+# Importando librerias de tiempo
+from datetime import datetime, date, time, timedelta
+import calendar
 
 
 # Clase Primaria
@@ -287,8 +292,8 @@ class Window:
         # funcion
         self.rellenar_tabla_sup(id_area)
         # Botones
-        ttk.Button(self.window, text="Actualizar Datos").grid(row=2, column=0)
-        ttk.Button(self.window, text="Generar Codigo Qr").grid(row=2, column=1)
+        ttk.Button(self.window, text="Actualizar Datos", command = self.up_data_sup).grid(row=2, column=0)
+        ttk.Button(self.window, text="Generar Codigo Qr", command = self.create_qr_code).grid(row=2, column=1)
         
     def rellenar_tabla_sup(self, id_area = []):
         # limpiar data
@@ -302,6 +307,99 @@ class Window:
             fetch = self.run_query(query, parameters)
             for row in fetch:
                 self.tablero_sup.insert("", "end", text=row[0], values=(row[2], row[3], row[4], row[5], row[6]))
+        
+    def up_data_sup(self):
+        # Verificamos que seleccione un registro
+        try:
+            self.tablero_sup.item(self.tablero_sup.selection())["text"]
+        except IndexError as e:
+            messagebox.showwarning("Advertencia del sistema", "Favor seleccionar un registro para actualizar")
+            return
+        # Generando variables de tablero
+        id_product = self.tablero_sup.item(self.tablero_sup.selection())["text"]
+        num_cons = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
+        # Generamos nueva ventana para actualizar data
+        self.ventana_act_sup = Toplevel()
+        self.ventana_act_sup.title("Actualizar data de registros")
+        # Asignando formulario
+        Label(self.ventana_act_sup, text="Formulario para actualizar data\ndel registro seleccionado").grid(row=0, column=0, columnspan=2)
+        Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}")
+        
+        Label(self.ventana_act_sup, text="Cantidad").grid(row=1, column=0)
+        cnt = Entry(self.ventana_act_sup)
+        cnt.grid(row=1, column=1)
+        
+        Label(self.ventana_act_sup, text="Numero de consultas").grid(row=2, column=0)
+        nm_c = Entry(self.ventana_act_sup)
+        nm_c.grid(row=2, column=1)
+        
+        Label(self.ventana_act_sup, text="Descripcion del item").grid(row=3, column=0)
+        desc_item = Entry(self.ventana_act_sup)
+        desc_item.grid(row=3, column=1)
+        
+        Label(self.ventana_act_sup, text="Valor").grid(row=4, column=0)
+        val = Entry(self.ventana_act_sup)
+        val.grid(row=4, column=1)
+        
+        Label(self.ventana_act_sup, text="Observacion").grid(row=5, column=0)
+        obs = Entry(self.ventana_act_sup)
+        obs.grid(row=5, column=1)
+        # Falta agregar botones, y hacer las consultas update
+        # Botones
+        ttk.Button(self.ventana_act_sup, text="Actualizar", command= lambda : self.act_data_sup_query(cnt.get(),
+                                                                                                        nm_c.get(),
+                                                                                                        desc_item.get(),
+                                                                                                        val.get(),
+                                                                                                        obs.get(),
+                                                                                                        id_product,
+                                                                                                        num_cons)).grid(row=6, column=0, columnspan=2, pady=15)
+        
+    def act_data_sup_query(self, cnt, nm_c, desc_item, val, obs, id_b, num_c):
+        # update
+        query = """UPDATE bienes_por_zona SET cantidad = ?, num_cons = ?, desc_item = ?, valor = ?, observacion = ?
+                WHERE id_bienes = ? AND numero_cons = ?"""
+        parameters = (cnt, nm_c, desc_item, val, obs, id_b, num_c, )
+        # Pregunta de verificacion
+        quest = messagebox.askyesno(title = "Consulta del sistema", message="Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción")
+        if quest:
+            fetch = self.run_query(query, parameters)
+            print(fetch)
+            if len(fetch) <= 0:
+                messagebox.showinfo("Mensaje del sistema", "Todo salio correcto")
+            else: messagebox.showwarning("Mensaje del sistema", "Se ha detectado un error")
+        else:
+            messagebox.showinfo("Mensaje del sistema", "Correcto se revirtio la accion")
+            return
+        
+    def create_qr_code(self):
+        # Seleccionando valores
+        try:
+            self.tablero_sup.item(self.tablero_sup.selection())["text"]
+        except IndexError as E:
+            messagebox.showinfo("Mensaje del sistema", "No se a seleccionado ningun registro")
+            return
+        # asignando valores a variables de la tabla
+        id_b = self.tablero_sup.item(self.tablero_sup.selection())["text"]
+        num_c = self.tablero_sup.item(self.tablero_sup.selection())["values"][1]
+        cnt = self.tablero_sup.item(self.tablero_sup.selection())["values"][0]
+        val = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
+        
+        fecha = datetime.now()
+        fecha_m = f"{fecha.year}_{fecha.month}_{fecha.day}"
+        
+        name_code = f"ID_B{id_b}NM_C{num_c}C{cnt}V{val}"
+        name_img = f"IMG_Code_ID{id_b}_{fecha_m}"
+        qr = qrc.QRCode(
+            version=5,
+            error_correction=qrc.constants.ERROR_CORRECT_L,
+            box_size=15,
+            border=6,
+        )
+        qr.add_data(name_code)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(self.obtener_directorio() + "\\Python-Projects\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
 
 # Inicializacion de la interfaz Tk
 window = Tk()
