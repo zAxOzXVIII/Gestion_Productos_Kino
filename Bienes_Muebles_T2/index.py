@@ -26,7 +26,7 @@ class Window:
         # Label Titulo Main
         label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
         Label(self.window, text="Sesion Administrador").grid(row=1, column=0)
-        boton_admin = ttk.Button(self.window, text="Iniciar Sesion").grid(row=1, column=1)
+        boton_admin = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_admin).grid(row=1, column=1)
         
         Label(self.window, text="Sesion supervisor").grid(row=2, column=0)
         boton_sup = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_sup).grid(row=2, column=1)
@@ -63,6 +63,9 @@ class Window:
         except mdb.Error as e:
             message = f"Alert Error: {e}"
             return message
+        finally:
+            conn.close()
+            print("Se ha finalizado la conexion")
     
     def obtener_directorio(self):
         directorio = os.getcwd()
@@ -114,7 +117,7 @@ class Window:
         boton_admin = ttk.Button(self.window, text="Iniciar Sesion").grid(row=1, column=1)
         
         Label(self.window, text="Sesion supervisor").grid(row=2, column=0)
-        boton_sup = ttk.Button(self.window, text="Iniciar Sesion").grid(row=2, column=1)
+        boton_sup = ttk.Button(self.window, text="Iniciar Sesion", command=self.toplevel_login_sup).grid(row=2, column=1)
         
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.public_main).grid(row=3, column=1)
@@ -400,10 +403,53 @@ class Window:
         
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(self.obtener_directorio() + "\\Python-Projects\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
-
-# Inicializacion de la interfaz Tk
-window = Tk()
-# Asignacion de la clase Window al objeto -> instanciacion de objeto
-app = Window(window)
-# Ciclo de ventana
-window.mainloop()
+        
+    # Inicializacion de Administrador
+    def toplevel_login_admin(self):
+        self.toplevel_admin = Toplevel()
+        self.toplevel_admin.title("Sesion de Administrador")
+        #  planteando sesion de administrador
+        Label(self.toplevel_admin, text="Inicia como administrador").grid(row=0, column=0, columnspan=2, pady=10)
+        Label(self.toplevel_admin, text="Ingresa\nUsuario").grid(row=1, column=0)
+        user_adm = Entry(self.toplevel_admin)
+        user_adm.grid(row=1, column=1, padx=5)
+        # password
+        Label(self.toplevel_admin, text="Ingrese\nContraseña").grid(row=2, column=0)
+        password_adm = Entry(self.toplevel_admin)
+        password_adm.grid(row=2, column=1, padx=5)
+        # button
+        ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10)
+        # pie de pagina
+        self.pie_pagina()
+    
+    def log_adm_sesion(self, user, password):
+        query = "SELECT * FROM administrador WHERE usuario = ? AND clave = ?"
+        parameters = (user, password, )
+        fetch = self.run_query(query, parameters)
+        print(fetch)
+        if len(fetch) <= 0:
+            print("Contraseña incorrecta")
+            return
+        else:
+            # asignando valores
+            for u in fetch:
+                if user == u[1]: name_u = u[1]
+            messagebox.showinfo("Mensaje del sistema", "Bienvenido, se verifico con exito")
+            self.toplevel_admin.destroy()
+            self.limpiar_ventana()
+            # generando ventana admin
+            self.w_admin_main(name_u)
+    
+    def w_admin_main(self, user):
+        # Asignando a main
+        self.window.geometry("200x200")
+        # Mensajes label
+        Label(self.window, text=f"Bienvenido {user}").pack()
+    
+if __name__ == "__main__":
+    # Inicializacion de la interfaz Tk
+    window = Tk()
+    # Asignacion de la clase Window al objeto -> instanciacion de objeto
+    app = Window(window)
+    # Ciclo de ventana
+    window.mainloop()
