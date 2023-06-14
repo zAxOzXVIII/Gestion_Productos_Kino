@@ -14,7 +14,8 @@ import qrcode as qrc
 # Importando librerias de tiempo
 from datetime import datetime, date, time, timedelta
 import calendar
-
+# importando el modulo de hash que genera diferentes tipos, usaremos md5
+import hashlib as hhl
 
 # Clase Primaria
 class Window:
@@ -65,7 +66,7 @@ class Window:
                 cursor.execute(query, parameters)
                 conn.commit()
                 fetch = cursor.fetchall()
-                print(fetch, "l62")
+                print(fetch, "l69")
                 return fetch
             except mdb.Error as e:
                 message = f"Alert Error: {e}"
@@ -81,8 +82,8 @@ class Window:
                 cursor = conn.cursor()
                 cursor.execute(query, parameters)
                 conn.commit()
-                rowcount = cursor.rowcount()
-                print(rowcount, "l62")
+                rowcount = cursor.rowcount #Arreglado
+                print(rowcount, "l86")
                 return rowcount
             except mdb.Error as e:
                 message = f"Alert Error: {e}"
@@ -294,10 +295,10 @@ class Window:
         print(fetch)
         name = fetch[0][1]
         
-        Label(self.window, text=f"Supervisor encargado {name}").grid(row=0, column=0, columnspan=5, pady=10, padx=25)
+        Label(self.window, text=f"Supervisor encargado {name}").grid(row=0, column=0, columnspan=3, pady=10, padx=25)
         self.tablero_sup = ttk.Treeview(self.window, height=10)
         # asignando en main window
-        self.tablero_sup.grid(row=1, column=0, columnspan=5)
+        self.tablero_sup.grid(row=1, column=0, columnspan=3)
         # entablando heading
         self.tablero_sup["columns"] = ("col0", "col1", "col2", "col3", "col4")
         # asignando valores a las columnas
@@ -326,6 +327,9 @@ class Window:
         # Botones
         ttk.Button(self.window, text="Actualizar Datos", command = self.up_data_sup).grid(row=2, column=0)
         ttk.Button(self.window, text="Generar Codigo Qr", command = self.create_qr_code).grid(row=2, column=1)
+        ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=2, column=2)
+        # pie de pagina
+        self.pie_pagina()
         
     def rellenar_tabla_sup(self, id_area = []):
         # limpiar data
@@ -355,7 +359,7 @@ class Window:
         self.ventana_act_sup.title("Actualizar data de registros")
         # Asignando formulario
         Label(self.ventana_act_sup, text="Formulario para actualizar data\ndel registro seleccionado").grid(row=0, column=0, columnspan=2)
-        Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}")
+        Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}").grid(row=0, column=2)
         
         Label(self.ventana_act_sup, text="Cantidad").grid(row=1, column=0)
         cnt = Entry(self.ventana_act_sup)
@@ -389,16 +393,16 @@ class Window:
     def act_data_sup_query(self, cnt, nm_c, desc_item, val, obs, id_b, num_c):
         # update
         query = """UPDATE bienes_por_zona SET cantidad = ?, num_cons = ?, desc_item = ?, valor = ?, observacion = ?
-                WHERE id_bienes = ? AND numero_cons = ?"""
-        parameters = (cnt, nm_c, desc_item, val, obs, id_b, num_c, )
+                WHERE id_bienes = ?"""
+        parameters = (cnt, nm_c, desc_item, val, obs, id_b, )
         # Pregunta de verificacion
         quest = messagebox.askyesno(title = "Consulta del sistema", message="Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción")
         if quest:
-            fetch = self.run_query(query, parameters)
-            print(fetch)
-            if len(fetch) <= 0:
-                messagebox.showinfo("Mensaje del sistema", "Todo salio correcto")
-            else: messagebox.showwarning("Mensaje del sistema", "Se ha detectado un error")
+            fila = self.run_query(query, parameters, 2)
+            print(fila)
+            if isinstance(fila, int):
+                messagebox.showinfo("Mensaje del sistema", f"Todo salio correcto\n se actualizaron {fila} filas")
+            else: messagebox.showwarning("Mensaje del sistema", f"Se ha detectado un error: {fila}")
         else:
             messagebox.showinfo("Mensaje del sistema", "Correcto se revirtio la accion")
             return
@@ -420,6 +424,10 @@ class Window:
         fecha_m = f"{fecha.year}_{fecha.month}_{fecha.day}"
         
         name_code = f"ID_B{id_b}NM_C{num_c}C{cnt}V{val}"
+        # tupla que guardara informacion para la query del QR que se subira a la tabla
+        data_query = (name_code, str(id_b), str(cnt))
+        # query
+        self.up_qrcode_table(data_query)
         name_img = f"IMG_Code_ID{id_b}_{fecha_m}"
         qr = qrc.QRCode(
             version=5,
@@ -433,6 +441,12 @@ class Window:
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(self.obtener_directorio() + "\\Python-Projects\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
         
+    # Query para subir el valor de la columna qr_code al generar un Qr
+    def up_qrcode_table(self, parameters = ()):
+        query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ? AND cantidad = ?"
+        filas = self.run_query(query, parameters, opc = 2)
+        if isinstance(filas, int): messagebox.showinfo("Mensaje del sistema", f"Se actualizaron {filas}")
+        else: print(filas)
     # Inicializacion de Administrador
     def toplevel_login_admin(self):
         self.toplevel_admin = Toplevel()
@@ -660,7 +674,10 @@ class Window:
         print(fetch, type(fetch))
         if isinstance(fetch, list):
             for row in fetch:
-                self.table_admin_data.insert("", "end", text=row[0], values = (row[1], row[2]))
+                # Debemos proteger la contraseña por lo que la incriptaremos
+                md5 = hhl.md5(row[2].encode())
+                hash_md5 = md5.hexdigest()
+                self.table_admin_data.insert("", "end", text=row[0], values = (row[1], hash_md5))
         else: messagebox.showwarning("Advertencia del sistema", fetch)
     
     def toplevel_admin_addW(self):
@@ -680,7 +697,7 @@ class Window:
                                                                                                             password.get())).grid(row=2, column=1)
     
     def add_admin_registers(self, parameters = ()):
-        query = "INSERT INTO administrador(usuario, contraseña) VALUES(?, ?)"
+        query = "INSERT INTO administrador(usuario, clave) VALUES(?, ?)"
         rowcount = self.run_query(query, parameters, 2)
         print("Numero de filas apectadas {rowcount}".format(rowcount))
     
@@ -691,11 +708,12 @@ class Window:
             messagebox.showwarning("Advertencia del sistema", e)
             return
         
+        id_admin = self.table_admin_data.item(self.table_admin_data.selection())["text"]
         user = self.table_admin_data.item(self.table_admin_data.selection())["values"][0]
         password = self.table_admin_data.item(self.table_admin_data.selection())["values"][1]
-        old_data = (user, password)
+        old_data = (user, id_admin)
         
-        query = "DELETE FROM administrador WHERE usuario = ? AND contraseña = ?"
+        query = "DELETE FROM administrador WHERE usuario = ? AND id_sesion_admin = ?"
         rowcount = self.run_query(query, old_data, 2)
         if isinstance(rowcount, int): messagebox.showinfo("Mensaje del sistema", f"Se borraron: {rowcount} registros correctamente")
 
