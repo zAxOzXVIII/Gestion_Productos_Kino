@@ -46,7 +46,7 @@ class Window:
         # Pie de ventana
         self.pie_pagina()
         
-    
+    # Funcion para eliminar los widgets hijo ->modelo
     def limpiar_ventana(self, opc = 1):
         # limpiando los widgets
         if opc == 1:
@@ -55,7 +55,7 @@ class Window:
         elif opc == 2:
             for widget in self.toplevel_admin_window.winfo_children():
                 widget.destroy()
-    
+    # funcion para llamar la base de datos ->modelo
     def run_query(self, query, parameters=(), opc = 1):
         if opc == 1:
             try:
@@ -91,12 +91,12 @@ class Window:
             finally:
                 conn.close()
                 print("Se ha finalizado la conexion")
-    
+    # libreria os para hallar la direccion de los paquetes o carpetas ->modelo
     def obtener_directorio(self):
         directorio = os.getcwd()
         print("Directorio: ",directorio)
         return directorio
-    
+    # Se genera el pie de pagina con los datos de los participantes y la imagen de la empresa ->vista
     def pie_pagina(self):
         direct = self.obtener_directorio()
         imagen = Image.open(f"{direct}\\Python-Projects\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
@@ -115,7 +115,7 @@ class Window:
         # Label texto
         texto = "Requerimientos para Graduarse de TSU\nMarden Barrera V-30262472\nElio Sebas V-XXXXX\nDaniela Simanca V-XXXXX"
         copy = Label(self.window, text=texto).grid(row=num_filas, column=0)
-        
+    # Interfaz principal de usuario publico -> Vista
     def public_main(self):
         # limpiar ventana principal
         self.limpiar_ventana()
@@ -132,7 +132,7 @@ class Window:
         
         # pie de ventana
         self.pie_pagina()
-    
+    # interfaz principal - > vista
     def label_main(self):
         # limpiando ventana
         self.limpiar_ventana()
@@ -148,7 +148,7 @@ class Window:
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.public_main).grid(row=3, column=1)
         # pie de ventana
         self.pie_pagina()
-    
+    # Consulta de areas de trabajo -> modelo
     def sector_trabajo_query(self):
         # asignando la query sql
         sql = "SELECT nombre_area, id_area FROM areas_trabajo_kino WHERE codigo_zona = ?"
@@ -179,7 +179,7 @@ class Window:
             messagebox.showerror(title="Mensaje del sistema",
                                     message="No coincide con un codigo de area")
         
-    
+    # Menu de inyeccion de bienes muebles ->vista
     def window_after_query_work(self, zona, id):
         # Titulo
         Label(self.window, text=f"Registro de Bienes de {zona}").grid(row=0, column=0, columnspan=2)
@@ -214,17 +214,17 @@ class Window:
         salir = ttk.Button(self.window, text="Ir al Inicio", command=self.label_main).grid(row=num_filas, column=0, columnspan=2, pady=15)
         # pie pagina
         self.pie_pagina()
-    
+    # Query de inyeccion de bienes muebles -> modelo
     def safe_bm_data(self, id, cnt, nc, di, vlr, obs):
         sql = """INSERT INTO bienes_por_zona(id_area, cantidad, num_cons, desc_item, valor, observacion)
                 VALUES(?, ?, ?, ?, ? ,?)"""
         parameters = (id, cnt, nc, di, vlr, obs)
-        fetch =  self.run_query(sql, parameters)
+        fila =  self.run_query(sql, parameters, 2)
         
         # limpiando formulario
-        if fetch > 0:
+        if isinstance(fila, int):
             messagebox.showinfo(title="Mensaje del sistema",
-                            message="Se subio correctamente los datos")
+                            message=f"Se subio correctamente los datos, {fila}")
         else:
             messagebox.showwarning("Advertencia del sistema", "Error al subir la data")
             return
@@ -233,7 +233,7 @@ class Window:
         self.desc_item.delete(0, END)
         self.valor.delete(0, END)
         self.observ.delete(0, END)
-    
+    # top level al iniciar sesion de supervisor ->vista
     def toplevel_login_sup(self):
         self.sesion_level = Toplevel()
         self.sesion_level.title("Inicio de sesion del supervisor de area")
@@ -242,12 +242,12 @@ class Window:
         ci_sesion = Entry(self.sesion_level)
         ci_sesion.grid(row=1, column=1)
         ttk.Button(self.sesion_level, text="Cargar data", command= lambda: self.sesion_sup_ci(ci_sesion.get())).grid(row=2, column=0, columnspan=2)
-    
+    # quest de cedula sesion supervisor -> vista
     def sesion_sup_ci(self, ci):
         query = "SELECT * FROM supervisor_area_kino WHERE cedula = ?"
         parameters = (ci, )
         fetch = self.run_query(query, parameters)
-        if(len(fetch)<=0):
+        if isinstance(fetch, str) == True:
             messagebox.showwarning(title="Error en la data",
                                     message="No se encontraron registros con esta cedula")
         else:
@@ -256,7 +256,7 @@ class Window:
             parameters2 = (fetch[0][0], )
             fetch2 = self.run_query(query2, parameters2)
             # print(fetch2) -> testeo
-            if len(fetch2) <= 0: messagebox.showwarning("Mensaje de sesion", "No tiene permisos para iniciar sesion")
+            if isinstance(fetch2, str) == True: messagebox.showwarning("Mensaje de sesion", "No tiene permisos para iniciar sesion")
             else:
                 messagebox.showinfo(title="Mensaje de sesion",
                                         message=f"El usuario {fetch[0][1]} si tiene permisos, favor digite su contraseña")
@@ -269,14 +269,14 @@ class Window:
                 password_sup.grid(row=0, column=1, pady=25)
                 ttk.Button(self.sesion_level, text="Ingresar", command= lambda : self.log_sesion_sup(password_sup.get())).grid(row=1, column=0, columnspan=2, pady=5)
                 
-    
+    # Loguin de sesion supervisor ->modelo
     def log_sesion_sup(self, password):
         query = "SELECT id_supervisor, clave_sup FROM supervisor_sesion WHERE clave_sup = ?"
         parameters = (password, )
         fetch = self.run_query(query, parameters)
         print(fetch)
         
-        if len(fetch) <= 0:
+        if isinstance(fetch, str) == True:
             messagebox.showwarning("Alerta de contraseña", "No coincide su contraseña con los registros")
         else:
             # asignando id supervisor
@@ -284,7 +284,7 @@ class Window:
             messagebox.showinfo("Mensaje del sistema", "Bienvenido, su sesion a sido verificada con exito")
             self.sesion_level.destroy()
             self.main_sup_panel(id_sup)
-    
+    # Main principal del supervisor->vista
     def main_sup_panel(self, id_sup):
         # Limpiamos pantalla
         self.limpiar_ventana()
@@ -330,7 +330,7 @@ class Window:
         ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=2, column=2)
         # pie de pagina
         self.pie_pagina()
-        
+    # Rellenar la tabla de bienes en sesion supervisor ->modelo
     def rellenar_tabla_sup(self, id_area = []):
         # limpiar data
         valores = self.tablero_sup.get_children()
@@ -343,7 +343,7 @@ class Window:
             fetch = self.run_query(query, parameters)
             for row in fetch:
                 self.tablero_sup.insert("", "end", text=row[0], values=(row[2], row[3], row[4], row[5], row[6]))
-        
+    # Vista de talero al actualizar un registro de bienes ->vista
     def up_data_sup(self):
         # Verificamos que seleccione un registro
         try:
@@ -389,7 +389,7 @@ class Window:
                                                                                                         obs.get(),
                                                                                                         id_product,
                                                                                                         num_cons)).grid(row=6, column=0, columnspan=2, pady=15)
-        
+    # Modelo al subir la actualizacion de valores en registros bienes ->controlador
     def act_data_sup_query(self, cnt, nm_c, desc_item, val, obs, id_b, num_c):
         # update
         query = """UPDATE bienes_por_zona SET cantidad = ?, num_cons = ?, desc_item = ?, valor = ?, observacion = ?
@@ -406,7 +406,7 @@ class Window:
         else:
             messagebox.showinfo("Mensaje del sistema", "Correcto se revirtio la accion")
             return
-        
+    # Modelo que crea las Qr images ->modelo
     def create_qr_code(self):
         # Seleccionando valores
         try:
@@ -441,13 +441,13 @@ class Window:
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(self.obtener_directorio() + "\\Python-Projects\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
         
-    # Query para subir el valor de la columna qr_code al generar un Qr
+    # Query para subir el valor de la columna qr_code al generar un Qr ->modelo
     def up_qrcode_table(self, parameters = ()):
         query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ? AND cantidad = ?"
         filas = self.run_query(query, parameters, opc = 2)
         if isinstance(filas, int): messagebox.showinfo("Mensaje del sistema", f"Se actualizaron {filas}")
         else: print(filas)
-    # Inicializacion de Administrador
+    # Inicializacion de Administrador toplevel->vista
     def toplevel_login_admin(self):
         self.toplevel_admin = Toplevel()
         self.toplevel_admin.title("Sesion de Administrador")
@@ -464,14 +464,15 @@ class Window:
         ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10)
         # pie de pagina
         self.pie_pagina()
-    
+    # Login de administradores -> modelo
     def log_adm_sesion(self, user, password):
         query = "SELECT * FROM administrador WHERE usuario = ? AND clave = ?"
         parameters = (user, password, )
         fetch = self.run_query(query, parameters)
         print(fetch)
-        if len(fetch) <= 0:
-            print("Contraseña incorrecta")
+        if isinstance(fetch, str) == True:
+            print("Contraseña incorrecta L474")
+            messagebox.showwarning("Advertencia del sistema", f"Contraseña incorrecta")
             return
         else:
             # asignando valores
@@ -482,7 +483,7 @@ class Window:
             self.limpiar_ventana()
             # generando ventana admin
             self.w_admin_main(name_u)
-    
+    # Window de administrador->vista
     def w_admin_main(self, user):
         # Asignando a main
         # self.window.geometry("200x200")
@@ -513,7 +514,7 @@ class Window:
         ttk.Button(self.window, text="Usuarios Admin", command = self.topLevel_admin_i).grid(row=3, column=0, pady= 15)
         # pie de pagina
         self.pie_pagina()
-    
+    # Rellenando tabla de supervisores en el main admin ->modelo
     def fill_admin_table_sup(self, busqueda = (), w_quest = "1"):
         # limpiamos tabla
         records = self.admin_table_sup.get_children()
@@ -537,7 +538,7 @@ class Window:
                 for row in fetch:
                     self.admin_table_sup.insert("", "end", text=row[0], values = (row[1], row[2], row[3]))
                 
-    # Consulta si se ha seleccionado una fila de la tabla de supervisores
+    # Consulta si se ha seleccionado una fila de la tabla de supervisores ->modelo
     def select_admin_table_sup(self):
         try:
             self.admin_table_sup.item(self.admin_table_sup.selection())["text"]
@@ -549,7 +550,7 @@ class Window:
         last_name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][1]
         dni = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][2]
         return (name, last_name, dni)
-    
+    # Interfaz al actualizar un supervisor dentro de administracion ->vista
     def topLevel_admin_interface_update(self):
         update_window = Toplevel()
         update_window.title("Agregar datos ventana")
@@ -580,27 +581,30 @@ class Window:
                                                                                                         (name.get(), last_name.get(), dni.get()))).grid(row= 6, column=0, columnspan=2)
         # pie de pagina
         self.pie_pagina()
-    
+    # Modelo de querys para el CRUD de supervisores dentro de administracion ->modelo
     def admin_query_customThree(self, opc : int, old_info = (), new_info = ()):
         # imprimiendo valores
         print("Valores old_info L533", old_info)
         print("Valores new_info L534", new_info)
         if opc == 1:
             query = "INSERT INTO supervisor_area_kino(nombre, apellido, cedula) VALUES(?, ?, ?)"
-            fetch = self.run_query(query, new_info)
-            if len(fetch) <= 0:
-                print("la insercion salio bien")
-            else: print(fetch)
+            fila = self.run_query(query, new_info, 2)
+            if isinstance(fila, int) == True:
+                print("la insercion salio bien L-593")
+            else: print(fila)
         elif opc == 2:
             query = f"UPDATE supervisor_area_kino SET nombre = ?, apellido = ?, cedula = ? WHERE nombre = {old_info[0]} AND cedula = {old_info[2]}"
-            fetch = self.run_query(query, new_info)
-            if len(fetch) <= 0: print("el update salio bien", fetch)
+            fila = self.run_query(query, new_info, 2)
+            if isinstance(fila, int) == True: print("el update salio bien L-598", fila)
+            else: print(fila)
         elif opc == 3:
             query = f"DELETE FROM supervisor_area_kino WHERE nombre = ? AND apellido = ? AND cedula = ?"
-            fetch = self.run_query(query, old_info)
-            print(fetch, "Mensaje L555")
+            fila = self.run_query(query, old_info, 2)
+            if isinstance(fila, int) == True:
+                print(fila, "El delete salio bien L-604")
+            else: print(fila)
         
-    
+    #  Top level interfaz al añadir un nuevo supervisor, main toplevel sup en administracion config -> vista
     def topLevel_admin_interface_add(self):
         # ventana add
         add_window = Toplevel()
@@ -623,7 +627,7 @@ class Window:
         btn = ttk.Button(add_window, text="Agregar valores", command = lambda : self.admin_query_customThree(1, (),
                                                                                                                 (name.get(), last_name.get(), dni.get())))
         btn.grid(row=3, column = 0, columnspan=2)
-    
+    # Toplevel interfaz de borrar  -> modelo
     def topLevel_admin_interface_delete(self):
         # Llamando query para eliminar data
         select_data = self.select_admin_table_sup()
@@ -636,7 +640,7 @@ class Window:
         # Actualizando tabla
         self.fill_admin_table_sup()
         
-    
+    # Vista de toplevel admin interfaz -> vista
     def topLevel_admin_i(self):
         self.toplevel_admin_window = Toplevel()
         self.toplevel_admin_window.title("Panel de admins")
@@ -661,7 +665,7 @@ class Window:
         ttk.Button(self.toplevel_admin_window, text="Agregar", command = self.toplevel_admin_addW).grid(row=2, column=0)
         ttk.Button(self.toplevel_admin_window, text="Eliminar", command = self.toplevel_admin_deleteW).grid(row=2, column=1)
         
-    
+    # Rellenar tabla de administradores -> modelo
     def fill_admin_table(self):
         # limpiamos tabla
         records = self.table_admin_data.get_children()
@@ -679,7 +683,7 @@ class Window:
                 hash_md5 = md5.hexdigest()
                 self.table_admin_data.insert("", "end", text=row[0], values = (row[1], hash_md5))
         else: messagebox.showwarning("Advertencia del sistema", fetch)
-    
+    # Top level agregar admins interfaz -> vista
     def toplevel_admin_addW(self):
         # Limpiar ventana
         self.limpiar_ventana(opc = 2)
@@ -695,12 +699,12 @@ class Window:
         # Agregar
         ttk.Button(self.toplevel_admin_window, text="Subir", command = lambda : self.add_admin_registers(user.get(),
                                                                                                             password.get())).grid(row=2, column=1)
-    
+    # query de agregar admins -> modelo
     def add_admin_registers(self, parameters = ()):
         query = "INSERT INTO administrador(usuario, clave) VALUES(?, ?)"
         rowcount = self.run_query(query, parameters, 2)
         print("Numero de filas apectadas {rowcount}".format(rowcount))
-    
+    # query para borrar administrador ->modelo
     def toplevel_admin_deleteW(self):
         try:
             self.table_admin_data.item(self.table_admin_data.selection())["text"]
@@ -716,6 +720,9 @@ class Window:
         query = "DELETE FROM administrador WHERE usuario = ? AND id_sesion_admin = ?"
         rowcount = self.run_query(query, old_data, 2)
         if isinstance(rowcount, int): messagebox.showinfo("Mensaje del sistema", f"Se borraron: {rowcount} registros correctamente")
+    
+    def setwindow(self):
+        return self.window
 
 # Proceso principal
 if __name__ == "__main__":
