@@ -1,12 +1,12 @@
-from model import Model
-from view import View
-# f
+import model
+import view
+# tkinter library
 from tkinter import Tk
 
-class Controller(Model, View):
+class Controller(model.Model, view.View):
     def __init__(self, window):
         self.window = window
-        View.__init__(self, self.window)
+        view.View.__init__(self, self.window)
 
 # Proceso principal
 if __name__ == "__main__":

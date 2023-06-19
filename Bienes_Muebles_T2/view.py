@@ -1,13 +1,16 @@
 # Librerias
 # importando libreria Pillow - convert image
-from PIL import ImageTk, Image
+import PIL as pil
+from PIL import ImageTk
 # importando libreria grafica Tkainter
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+# importando modelo
+from model import Model
 # fin de librerias
 # Declarando clase vista
-class View:
+class View():
     db_name = "bienes_muebles"
     def __init__(self, window):
         self.window = window
@@ -37,10 +40,9 @@ class View:
         
     
     def pie_pagina(self):
-        direct = self.obtener_directorio()
-        imagen = Image.open(f"{direct}\\Python-Projects\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
-        image_re = imagen.resize((64,64), Image.LANCZOS)
-        
+        direct = Model.obtener_directorio(self)
+        imagen = pil.Image.open(f"{direct}\\Python-Projects\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
+        image_re = imagen.resize((64,64), pil.Image.LANCZOS)
         img_tk = ImageTk.PhotoImage(image_re)
         # obtener numero de filas
         num_filas = self.window.grid_size()[1]
@@ -57,7 +59,7 @@ class View:
     
     def public_main(self):
         # limpiar ventana principal
-        self.limpiar_ventana()
+        Model.limpiar_ventana(self)
         # generar nuevos labels
         title = Label(self.window, text="Digite el codigo del sector de trabajo\ncon el codigo correspondiente ").grid(row=0, column=0)
         self.code = Entry(self.window)
@@ -86,6 +88,23 @@ class View:
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.public_main).grid(row=3, column=1)
         # pie de ventana
+        self.pie_pagina()
+    
+    def toplevel_login_admin(self):
+        self.toplevel_admin = Toplevel()
+        self.toplevel_admin.title("Sesion de Administrador")
+        #  planteando sesion de administrador
+        Label(self.toplevel_admin, text="Inicia como administrador").grid(row=0, column=0, columnspan=2, pady=10)
+        Label(self.toplevel_admin, text="Ingresa\nUsuario").grid(row=1, column=0)
+        user_adm = Entry(self.toplevel_admin)
+        user_adm.grid(row=1, column=1, padx=5)
+        # password
+        Label(self.toplevel_admin, text="Ingrese\nContraseña").grid(row=2, column=0)
+        password_adm = Entry(self.toplevel_admin)
+        password_adm.grid(row=2, column=1, padx=5)
+        # button
+        ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10)
+        # pie de pagina
         self.pie_pagina()
     
     def window_after_query_work(self, zona, id):

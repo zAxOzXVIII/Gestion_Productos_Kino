@@ -11,8 +11,10 @@ import calendar
 import hashlib as hhl
 # tkinter message
 from tkinter import messagebox, END
+# importando libreria vista
+# from view import View
 
-class Model:
+class Model():
     # Funciones
     
     def limpiar_ventana(self, opc = 1):
