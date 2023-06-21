@@ -10,7 +10,7 @@ from tkinter import messagebox
 from model import Model
 # fin de librerias
 # Declarando clase vista
-class View():
+class View(Model):
     db_name = "bienes_muebles"
     def __init__(self, window):
         self.window = window
@@ -40,7 +40,7 @@ class View():
         
     
     def pie_pagina(self):
-        direct = Model.obtener_directorio(self)
+        direct = self.obtener_directorio()
         imagen = pil.Image.open(f"{direct}\\Python-Projects\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
         image_re = imagen.resize((64,64), pil.Image.LANCZOS)
         img_tk = ImageTk.PhotoImage(image_re)
@@ -59,7 +59,7 @@ class View():
     
     def public_main(self):
         # limpiar ventana principal
-        Model.limpiar_ventana(self)
+        self.limpiar_ventana()
         # generar nuevos labels
         title = Label(self.window, text="Digite el codigo del sector de trabajo\ncon el codigo correspondiente ").grid(row=0, column=0)
         self.code = Entry(self.window)
@@ -104,8 +104,6 @@ class View():
         password_adm.grid(row=2, column=1, padx=5)
         # button
         ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10)
-        # pie de pagina
-        self.pie_pagina()
     
     def window_after_query_work(self, zona, id):
         # Titulo

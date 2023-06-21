@@ -3,7 +3,7 @@ import view
 # tkinter library
 from tkinter import Tk
 
-class Controller(model.Model, view.View):
+class Controller(view.View):
     def __init__(self, window):
         self.window = window
         view.View.__init__(self, self.window)

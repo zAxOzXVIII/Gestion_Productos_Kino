@@ -174,26 +174,30 @@ class Model():
         cnt = self.tablero_sup.item(self.tablero_sup.selection())["values"][0]
         val = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
         
-        fecha = datetime.now()
-        fecha_m = f"{fecha.year}_{fecha.month}_{fecha.day}"
-        
-        name_code = f"ID_B{id_b}NM_C{num_c}C{cnt}V{val}"
-        # tupla que guardara informacion para la query del QR que se subira a la tabla
-        data_query = (name_code, str(id_b), str(cnt))
-        # query
-        self.up_qrcode_table(data_query)
-        name_img = f"IMG_Code_ID{id_b}_{fecha_m}"
-        qr = qrc.QRCode(
-            version=5,
-            error_correction=qrc.constants.ERROR_CORRECT_L,
-            box_size=15,
-            border=6,
-        )
-        qr.add_data(name_code)
-        qr.make(fit=True)
-        
-        img = qr.make_image(fill_color="black", back_color="white")
-        img.save(self.obtener_directorio() + "\\Python-Projects\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
+        try:
+            fecha = datetime.now()
+            fecha_m = f"{fecha.year}_{fecha.month}_{fecha.day}"
+            
+            name_code = f"ID_B{id_b}NM_C{num_c}C{cnt}V{val}"
+            # tupla que guardara informacion para la query del QR que se subira a la tabla
+            data_query = (name_code, str(id_b), str(cnt))
+            # query
+            self.up_qrcode_table(data_query)
+            name_img = f"IMG_Code_ID{id_b}_{fecha_m}"
+            qr = qrc.QRCode(
+                version=5,
+                error_correction=qrc.constants.ERROR_CORRECT_L,
+                box_size=15,
+                border=6,
+            )
+            qr.add_data(name_code)
+            qr.make(fit=True)
+            
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(self.obtener_directorio() + "\\Python-Projects\\Gestion_Productos_Kino-main\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
+        except Exception as e:
+            print(e)
+            return
     
     def up_qrcode_table(self, parameters = ()):
         query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ? AND cantidad = ?"
@@ -259,6 +263,7 @@ class Model():
         # imprimiendo valores
         print("Valores old_info L533", old_info)
         print("Valores new_info L534", new_info)
+        # convertir valores a string
         if opc == 1:
             query = "INSERT INTO supervisor_area_kino(nombre, apellido, cedula) VALUES(?, ?, ?)"
             fila = self.run_query(query, new_info, 2)
@@ -330,3 +335,4 @@ class Model():
     
     
     
+
