@@ -9,13 +9,16 @@ from datetime import datetime, date, time, timedelta
 import calendar
 # importando el modulo de hash que genera diferentes tipos, usaremos md5
 import hashlib as hhl
-# tkinter message
-from tkinter import messagebox, END
+# tkinter END
+from tkinter import END
 # importando libreria vista
-# from view import View
+from view import View
 
-class Model():
+class Model(View):
+    db_name = "bienes_muebles"
     # Funciones
+    def __init__(self, window):
+        View.__init__(self, window)
     
     def limpiar_ventana(self, opc = 1):
         # limpiando los widgets
@@ -67,35 +70,26 @@ class Model():
         print("Directorio: ",directorio)
         return directorio
     
-    def sector_trabajo_query(self):
+    def sector_trabajo_query(self, code):
         # asignando la query sql
-        sql = "SELECT nombre_area, id_area FROM areas_trabajo_kino WHERE codigo_zona = ?"
+        sql = "SELECT * FROM bienes_por_zona WHERE codigo_qr = ?"
         
         try:
-            fetch = self.run_query(sql, (self.code.get(), ))
-            print(fetch, "l138")
+            fetch = self.run_query(sql, (code, ))
+            if len(fetch) <= 0:
+                self.messageShow("Codigo no encontrado favor verifique", 2)
+                return
+            print(fetch, "l79")
             # imprimiendo valores
             for row in fetch:
-                name = row[0]
-                ide = row[1]
+                self.messageShow(f"""Datos de la Query: id_bienes = {row[0]}\n id_area = {row[1]} cantidad = {row[2]}\n
+                                    numero de consulta = {row[3]} descripcion del item = {row[4]}\n
+                                    valor = {row[5]} observacion {row[6]} y codigo qr = {row[7]}""")
+            
         except IndexError as E:
             msg = f"Se ha detectado un error: {E}"
             print(fetch)
-            return messagebox.showerror(title="Mensaje del sistema",
-                                message=msg)
-        
-        
-        if len(fetch) > 0:
-            msg = f"Sector {name}, ID {ide} del area"
-            messagebox.showinfo(title="Mensaje del sistema",
-                                message=msg)
-            # limpiando ventana
-            self.limpiar_ventana()
-            # imprimiendo pantalla
-            self.window_after_query_work(name, ide)
-        else:
-            messagebox.showerror(title="Mensaje del sistema",
-                                    message="No coincide con un codigo de area")
+            return self.messageShow(msg, 3)
     
     def safe_bm_data(self, id, cnt, nc, di, vlr, obs):
         sql = """INSERT INTO bienes_por_zona(id_area, cantidad, num_cons, desc_item, valor, observacion)
@@ -104,11 +98,9 @@ class Model():
         fila =  self.run_query(sql, parameters, 2)
         
         # limpiando formulario
-        if isinstance(fila, int):
-            messagebox.showinfo(title="Mensaje del sistema",
-                            message=f"Se subio correctamente los datos, {fila}")
+        if isinstance(fila, int):self.messageShow(f"Se subio correctamente los datos, {fila}")
         else:
-            messagebox.showwarning("Advertencia del sistema", "Error al subir la data")
+            self.messageShow("Error al subir la data", 2)
             return
         self.cantidad.delete(0, END)
         self.num_cons.delete(0, END)
@@ -123,11 +115,11 @@ class Model():
         print(fetch)
         
         if isinstance(fetch, str) == True:
-            messagebox.showwarning("Alerta de contraseña", "No coincide su contraseña con los registros")
+            self.messageShow("No coincide su contraseña con los registros", 2)
         else:
             # asignando id supervisor
             id_sup = fetch[0][0]
-            messagebox.showinfo("Mensaje del sistema", "Bienvenido, su sesion a sido verificada con exito")
+            self.messageShow("Bienvenido, su sesion a sido verificada con exito")
             self.sesion_level.destroy()
             self.main_sup_panel(id_sup)
     
@@ -150,15 +142,14 @@ class Model():
                 WHERE id_bienes = ?"""
         parameters = (cnt, nm_c, desc_item, val, obs, id_b, )
         # Pregunta de verificacion
-        quest = messagebox.askyesno(title = "Consulta del sistema", message="Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción")
-        if quest:
+        if self.messageAsk("Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción"):
             fila = self.run_query(query, parameters, 2)
             print(fila)
             if isinstance(fila, int):
-                messagebox.showinfo("Mensaje del sistema", f"Todo salio correcto\n se actualizaron {fila} filas")
-            else: messagebox.showwarning("Mensaje del sistema", f"Se ha detectado un error: {fila}")
+                self.messageShow(f"Todo salio correcto\n se actualizaron {fila} filas")
+            else: self.messageShow(f"Se ha detectado un error: {fila}", 2)
         else:
-            messagebox.showinfo("Mensaje del sistema", "Correcto se revirtio la accion")
+            self.messageShow("Correcto se revirtio la accion")
             return
     
     def create_qr_code(self):
@@ -166,7 +157,7 @@ class Model():
         try:
             self.tablero_sup.item(self.tablero_sup.selection())["text"]
         except IndexError as E:
-            messagebox.showinfo("Mensaje del sistema", "No se a seleccionado ningun registro")
+            self.messageShow("No se a seleccionado ningun registro", 2)
             return
         # asignando valores a variables de la tabla
         id_b = self.tablero_sup.item(self.tablero_sup.selection())["text"]
@@ -202,7 +193,7 @@ class Model():
     def up_qrcode_table(self, parameters = ()):
         query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ? AND cantidad = ?"
         filas = self.run_query(query, parameters, opc = 2)
-        if isinstance(filas, int): messagebox.showinfo("Mensaje del sistema", f"Se actualizaron {filas}")
+        if isinstance(filas, int): self.messageShow(f"Se actualizaron {filas}")
         else: print(filas)
     
     def log_adm_sesion(self, user, password):
@@ -212,18 +203,18 @@ class Model():
         print(fetch)
         if isinstance(fetch, str) == True:
             print("Contraseña incorrecta L474")
-            messagebox.showwarning("Advertencia del sistema", f"Contraseña incorrecta")
+            self.messageShow(f"Contraseña incorrecta", 2)
             return
         else:
             # asignando valores
             for u in fetch:
                 if user == u[1]: name_u = u[1]
-            messagebox.showinfo("Mensaje del sistema", "Bienvenido, se verifico con exito")
+            self.messageShow("Bienvenido, se verifico con exito")
             self.toplevel_admin.destroy()
             self.limpiar_ventana()
             # generando ventana admin
             self.w_admin_main(name_u)
-        
+    
     def fill_admin_table_sup(self, busqueda = (), w_quest = "1"):
         # limpiamos tabla
         records = self.admin_table_sup.get_children()
@@ -246,54 +237,67 @@ class Model():
                 fetch = self.run_query(query)
                 for row in fetch:
                     self.admin_table_sup.insert("", "end", text=row[0], values = (row[1], row[2], row[3]))
-                
+    
     def select_admin_table_sup(self):
         try:
             self.admin_table_sup.item(self.admin_table_sup.selection())["text"]
         except IndexError as e:
-            messagebox.showwarning("Advertencia del sistema", e)
+            self.messageShow(e, 2)
             return
         
         name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][0]
         last_name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][1]
         dni = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][2]
-        return (name, last_name, dni)
+        return (name, last_name, str(dni))
+    
+    def table_selection_question_sup(self):
+        if isinstance(self.admin_table_sup.item(self.admin_table_sup.selection())["text"], int): return True
+        else: return False
     
     def admin_query_customThree(self, opc : int, old_info = (), new_info = ()):
+        # tupla grande 
+        update_info = new_info + old_info
         # imprimiendo valores
         print("Valores old_info L533", old_info)
         print("Valores new_info L534", new_info)
-        # convertir valores a string
         if opc == 1:
             query = "INSERT INTO supervisor_area_kino(nombre, apellido, cedula) VALUES(?, ?, ?)"
             fila = self.run_query(query, new_info, 2)
             if isinstance(fila, int) == True:
-                print("la insercion salio bien L-593")
+                print("la insercion salio bien L-268")
+                self.three_message_interface(self.add_window, "La insercion salio bien")
             else: print(fila)
         elif opc == 2:
-            query = f"UPDATE supervisor_area_kino SET nombre = ?, apellido = ?, cedula = ? WHERE nombre = {old_info[0]} AND cedula = {old_info[2]}"
-            fila = self.run_query(query, new_info, 2)
-            if isinstance(fila, int) == True: print("el update salio bien L-598", fila)
+            query = f"UPDATE supervisor_area_kino SET nombre = ?, apellido = ?, cedula = ? WHERE nombre = ? AND apellido = ? AND cedula = ?"
+            fila = self.run_query(query, update_info, 2)
+            if isinstance(fila, int) == True: 
+                print("el update salio bien L-273", fila)
+                self.three_message_interface(self.update_window, "La actualizacion salio bien")
             else: print(fila)
         elif opc == 3:
             query = f"DELETE FROM supervisor_area_kino WHERE nombre = ? AND apellido = ? AND cedula = ?"
             fila = self.run_query(query, old_info, 2)
             if isinstance(fila, int) == True:
-                print(fila, "El delete salio bien L-604")
+                print(fila, "El delete salio bien L-279")
             else: print(fila)
     
     def topLevel_admin_interface_delete(self):
+        # testeando seleccion
+        if self.table_selection_question_sup(): pass
+        else: 
+            self.messageShow("Se debe seleccionar un registro de la tabla supervisor", 2)
+            return
         # Llamando query para eliminar data
         select_data = self.select_admin_table_sup()
         if len(select_data) > 0: 
-            if messagebox.askyesno("Pregunta del sistema", f"Esta seguro de eliminar el registro {select_data}"):
+            if self.messageAsk(f"Esta seguro de eliminar el registro {select_data}"):
                 self.admin_query_customThree(3, old_info = select_data)
         else:
-            messagebox.showwarning("Advertencia del sistema", "Error, debe seleccionar una fila")
+            self.messageShow("Error, debe seleccionar una fila", 2)
             return
         # Actualizando tabla
         self.fill_admin_table_sup()
-        
+    
     def fill_admin_table(self):
         # limpiamos tabla
         records = self.table_admin_data.get_children()
@@ -310,18 +314,19 @@ class Model():
                 md5 = hhl.md5(row[2].encode())
                 hash_md5 = md5.hexdigest()
                 self.table_admin_data.insert("", "end", text=row[0], values = (row[1], hash_md5))
-        else: messagebox.showwarning("Advertencia del sistema", fetch)
+        else: self.messageShow(fetch, 2)
     
     def add_admin_registers(self, parameters = ()):
         query = "INSERT INTO administrador(usuario, clave) VALUES(?, ?)"
         rowcount = self.run_query(query, parameters, 2)
         print("Numero de filas apectadas {rowcount}".format(rowcount))
     # query para borrar administrador ->modelo
+    
     def toplevel_admin_deleteW(self):
         try:
             self.table_admin_data.item(self.table_admin_data.selection())["text"]
         except IndexError as e:
-            messagebox.showwarning("Advertencia del sistema", e)
+            self.messageShow(e, 2)
             return
         
         id_admin = self.table_admin_data.item(self.table_admin_data.selection())["text"]
@@ -331,8 +336,5 @@ class Model():
         
         query = "DELETE FROM administrador WHERE usuario = ? AND id_sesion_admin = ?"
         rowcount = self.run_query(query, old_data, 2)
-        if isinstance(rowcount, int): messagebox.showinfo("Mensaje del sistema", f"Se borraron: {rowcount} registros correctamente")
-    
-    
-    
+        if isinstance(rowcount, int): self.messageShow(f"Se borraron: {rowcount} registros correctamente")
 

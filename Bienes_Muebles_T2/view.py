@@ -7,14 +7,15 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 # importando modelo
-from model import Model
+# from model import Model
 # fin de librerias
 # Declarando clase vista
-class View(Model):
-    db_name = "bienes_muebles"
+class View():
+    
     def __init__(self, window):
         self.window = window
         print(type(self.window))
+        self.window.geometry("640x480")
         self.window.title("Bienes Muebles Kino Tachira")
         
         # Label Titulo Main
@@ -41,7 +42,7 @@ class View(Model):
     
     def pie_pagina(self):
         direct = self.obtener_directorio()
-        imagen = pil.Image.open(f"{direct}\\Python-Projects\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
+        imagen = pil.Image.open(f"{direct}\\Python-Projects\\Gestion_Productos_Kino-main\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
         image_re = imagen.resize((64,64), pil.Image.LANCZOS)
         img_tk = ImageTk.PhotoImage(image_re)
         # obtener numero de filas
@@ -57,14 +58,27 @@ class View(Model):
         texto = "Requerimientos para Graduarse de TSU\nMarden Barrera V-30262472\nElio Sebas V-XXXXX\nDaniela Simanca V-XXXXX"
         copy = Label(self.window, text=texto).grid(row=num_filas, column=0)
     
+    def messageShow(self, msg : str, opc = 1):
+        if opc==1:
+            return messagebox.showinfo(title = "Mensaje del sistema", message = msg)
+        elif opc==2:
+            return messagebox.showwarning(title = "Advertencia del sistema", message = msg)
+        elif opc==3:
+            return messagebox.showerror(title = "Error del sistema", message = msg)
+    
+    def messageAsk(self, msg = "", opc = 1):
+        if opc == 1:
+            return messagebox.askyesno("Pregunta del sistema", msg)
+    
     def public_main(self):
         # limpiar ventana principal
         self.limpiar_ventana()
         # generar nuevos labels
-        title = Label(self.window, text="Digite el codigo del sector de trabajo\ncon el codigo correspondiente ").grid(row=0, column=0)
-        self.code = Entry(self.window)
-        self.code.grid(row=0, column=1)
-        boton_load = ttk.Button(self.window, text="Buscar", command=self.sector_trabajo_query)
+        title = Label(self.window, text="Digite el codigo del QR\nCon el cual se hará la busqueda").grid(row=0, column=0)
+        code = Entry(self.window, width=24)
+        code.focus()
+        code.grid(row=0, column=1)
+        boton_load = ttk.Button(self.window, text="Buscar", command= lambda : self.sector_trabajo_query(code.get()))
         boton_load.grid(row=1, column=0)
         
         # volver al inicio
@@ -77,6 +91,8 @@ class View(Model):
     def label_main(self):
         # limpiando ventana
         self.limpiar_ventana()
+        # ajustando tamaño
+        self.window.geometry("640x480")
         
         label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
         Label(self.window, text="Sesion Administrador").grid(row=1, column=0)
@@ -141,7 +157,7 @@ class View(Model):
         self.pie_pagina()
     
     def toplevel_login_sup(self):
-        self.sesion_level = Toplevel()
+        self.sesion_level = Toplevel(self.window)
         self.sesion_level.title("Inicio de sesion del supervisor de area")
         Label(self.sesion_level, text="Sesion de Supervisores").grid(row=0, column=0, columnspan=2)
         Label(self.sesion_level, text="Para verificar si tiene permisos\ncomo supervisor digite su numero de cedula").grid(row=1, column=0)
@@ -200,13 +216,13 @@ class View(Model):
         try:
             self.tablero_sup.item(self.tablero_sup.selection())["text"]
         except IndexError as e:
-            messagebox.showwarning("Advertencia del sistema", "Favor seleccionar un registro para actualizar")
+            self.messageShow("Favor seleccionar un registro para actualizar", 2)
             return
         # Generando variables de tablero
         id_product = self.tablero_sup.item(self.tablero_sup.selection())["text"]
         num_cons = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
         # Generamos nueva ventana para actualizar data
-        self.ventana_act_sup = Toplevel()
+        self.ventana_act_sup = Toplevel(self.window)
         self.ventana_act_sup.title("Actualizar data de registros")
         # Asignando formulario
         Label(self.ventana_act_sup, text="Formulario para actualizar data\ndel registro seleccionado").grid(row=0, column=0, columnspan=2)
@@ -243,7 +259,7 @@ class View(Model):
     
     def w_admin_main(self, user):
         # Asignando a main
-        # self.window.geometry("200x200")
+        self.window.geometry("800x600")
         # Mensajes label
         Label(self.window, text=f"Bienvenido {user}").grid(row=0, column=0, columnspan=3, pady=15)
         # Mostrando los supervisores en turno
@@ -269,65 +285,84 @@ class View(Model):
         # Consultar usuarios admin
         Label(self.window, text="Consultar sobre los usuarios admin disponibles").grid(row=3, column=1, columnspan=2, pady=15)
         ttk.Button(self.window, text="Usuarios Admin", command = self.topLevel_admin_i).grid(row=3, column=0, pady= 15)
+        # Salir
+        ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=4, column=0, columnspan=2, pady=10)
         # pie de pagina
         self.pie_pagina()
     
+    def three_message_interface(self, toplevel, msg = ""):
+        # Mostrando mensaje por pantalla
+        self.messageShow(msg)
+        # Rellenar nuevas filas en la tabla de supervisores
+        self.fill_admin_table_sup()
+        # Destruir toplevel
+        toplevel.destroy()
+    
     def topLevel_admin_interface_update(self):
-        update_window = Toplevel()
-        update_window.title("Agregar datos ventana")
+        # testeando seleccion
+        if self.table_selection_question_sup(): pass
+        else: 
+            self.messageShow("Se debe seleccionar un registro de la tabla supervisor", 2)
+            return
+        self.update_window = Toplevel(self.window)
+        self.update_window.title("Agregar datos ventana")
         # Datos anteriores
         old_data = self.select_admin_table_sup()
         if len(old_data) <= 0:
-            messagebox.showwarning("Advertencia del sistema", "Se debe seleccionar un registro")
+            self.messageShow("Se debe seleccionar un registro", 2)
             return
         
         # agregando labels
-        Label(update_window, text=f"Antigua información : {old_data[0]}").grid(row=0, column=0)
-        Label(update_window, text="Nombre del supervisor\nQue se actualizará").grid(row=1, column=0)
-        name = Entry(update_window)
+        Label(self.update_window, text=f"Antigua información : {old_data[0]}").grid(row=0, column=0)
+        Label(self.update_window, text="Nombre del supervisor\nQue se actualizará").grid(row=1, column=0)
+        name = Entry(self.update_window)
         name.grid(row=1, column=1)
         
-        Label(update_window, text=f"Antigua información : {old_data[1]}").grid(row=2, column=0)
-        Label(update_window, text="Apellido del supervisor\nQue se actualizará").grid(row=3, column=0)
-        last_name = Entry(update_window)
+        Label(self.update_window, text=f"Antigua información : {old_data[1]}").grid(row=2, column=0)
+        Label(self.update_window, text="Apellido del supervisor\nQue se actualizará").grid(row=3, column=0)
+        last_name = Entry(self.update_window)
         last_name.grid(row=3, column=1)
         
-        Label(update_window, text=f"Antigua información : {old_data[2]}").grid(row=4, column=0)
-        Label(update_window, text="Cedula del supervisor\nQue se actualizará").grid(row=5, column=0)
-        dni = Entry(update_window)
+        Label(self.update_window, text=f"Antigua información : {old_data[2]}").grid(row=4, column=0)
+        Label(self.update_window, text="Cedula del supervisor\nQue se actualizará").grid(row=5, column=0)
+        dni = Entry(self.update_window)
         dni.grid(row=5, column=1)
         
         # query
-        ttk.Button(update_window, text="Actualizar", command = lambda: self.admin_query_customThree(2, old_data,
+        ttk.Button(self.update_window, text="Actualizar", command = lambda: self.admin_query_customThree(2, old_data,
                                                                                                         (name.get(), last_name.get(), dni.get()))).grid(row= 6, column=0, columnspan=2)
-        # pie de pagina
-        self.pie_pagina()
+        
     
     def topLevel_admin_interface_add(self):
+        # preguntar si a se ha seleccionado
+        if self.table_selection_question_sup(): pass
+        else: 
+            self.messageShow("Se debe seleccionar un registro de la tabla supervisor", 2)
+            return
         # ventana add
-        add_window = Toplevel()
-        print(type(add_window))
-        add_window.title("Ventana de agregar")
+        self.add_window = Toplevel(self.window)
+        print(type(self.add_window))
+        self.add_window.title("Ventana de agregar")
         # Labels
-        Label(add_window, text="Nombre del supervisor nuevo").grid(row=0, column=0)
-        name = Entry(add_window)
+        Label(self.add_window, text="Nombre del supervisor nuevo").grid(row=0, column=0)
+        name = Entry(self.add_window)
         name.grid(row=0, column=1)
         
-        Label(add_window, text="Apellido del supervisor nuevo").grid(row=1, column=0)
-        last_name = Entry(add_window)
+        Label(self.add_window, text="Apellido del supervisor nuevo").grid(row=1, column=0)
+        last_name = Entry(self.add_window)
         last_name.grid(row=1, column=1)
         
-        Label(add_window, text="Cedula del supervisor nuevo").grid(row=2, column=0)
-        dni = Entry(add_window)
+        Label(self.add_window, text="Cedula del supervisor nuevo").grid(row=2, column=0)
+        dni = Entry(self.add_window)
         dni.grid(row=2, column=1)
         # data
         # boton
-        btn = ttk.Button(add_window, text="Agregar valores", command = lambda : self.admin_query_customThree(1, (),
+        btn = ttk.Button(self.add_window, text="Agregar valores", command = lambda : self.admin_query_customThree(1, (),
                                                                                                                 (name.get(), last_name.get(), dni.get())))
         btn.grid(row=3, column = 0, columnspan=2)
     
     def topLevel_admin_i(self):
-        self.toplevel_admin_window = Toplevel()
+        self.toplevel_admin_window = Toplevel(self.window)
         self.toplevel_admin_window.title("Panel de admins")
         # limpiar ventana
         self.limpiar_ventana(opc = 2)
@@ -371,15 +406,14 @@ class View(Model):
         parameters = (ci, )
         fetch = self.run_query(query, parameters)
         if isinstance(fetch, str) == True:
-            messagebox.showwarning(title="Error en la data",
-                                    message="No se encontraron registros con esta cedula")
+            self.messageShow("No se encontraron registros con esta cedula", 2)
         else:
             print(f"fetch[0][0] {fetch[0][0]}")
             query2 = "SELECT * FROM supervisor_sesion WHERE id_supervisor = ?"
             parameters2 = (fetch[0][0], )
             fetch2 = self.run_query(query2, parameters2)
             # print(fetch2) -> testeo
-            if isinstance(fetch2, str) == True: messagebox.showwarning("Mensaje de sesion", "No tiene permisos para iniciar sesion")
+            if isinstance(fetch2, str) == True: self.messageShow("No tiene permisos para iniciar sesion", 2)
             else:
                 messagebox.showinfo(title="Mensaje de sesion",
                                         message=f"El usuario {fetch[0][1]} si tiene permisos, favor digite su contraseña")
