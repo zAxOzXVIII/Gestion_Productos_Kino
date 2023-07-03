@@ -12,13 +12,11 @@ import hashlib as hhl
 # tkinter END
 from tkinter import END
 # importando libreria vista
-from view import View
+# from view import View
 
-class Model(View):
+class Model():
     db_name = "bienes_muebles"
     # Funciones
-    def __init__(self, window):
-        View.__init__(self, window)
     
     def limpiar_ventana(self, opc = 1):
         # limpiando los widgets
@@ -28,6 +26,13 @@ class Model(View):
         elif opc == 2:
             for widget in self.toplevel_admin_window.winfo_children():
                 widget.destroy()
+        elif opc == 3:
+            for widget in self.zona_toplevel.winfo_children():
+                widget.destroy()
+        elif opc == 4:
+            for widget in self.worker_toplevel_sup.winfo_children():
+                widget.destroy()
+        else: print("No existe esta opcion")
     
     def run_query(self, query, parameters=(), opc = 1):
         if opc == 1:
@@ -69,6 +74,14 @@ class Model(View):
         directorio = os.getcwd()
         print("Directorio: ",directorio)
         return directorio
+    
+    def log_public_sesion(self, parameters = ()):
+        query = "SELECT * FROM personal_laborando WHERE cedula = %s"
+        fetch = self.run_query(query, parameters)
+        print(fetch)
+        if isinstance(fetch, list):
+            return fetch
+        else: return fetch
     
     def sector_trabajo_query(self, code):
         # asignando la query sql
@@ -129,6 +142,9 @@ class Model(View):
         for elemento in valores:
             self.tablero_sup.delete(elemento)
         # llenando data
+        if len(id_area) <= 0:
+            self.tablero_sup.insert("", "end", text = "No hay bienes por mostrar", values = ("X", "X", "X", "X", "X"))
+            return
         for area in id_area:
             query = "SELECT * FROM bienes_por_zona WHERE id_area = ?"
             parameters = (area, )
@@ -140,13 +156,14 @@ class Model(View):
         # update
         query = """UPDATE bienes_por_zona SET cantidad = ?, num_cons = ?, desc_item = ?, valor = ?, observacion = ?
                 WHERE id_bienes = ?"""
-        parameters = (cnt, nm_c, desc_item, val, obs, id_b, )
+        parameters = (cnt.get(), nm_c.get(), desc_item.get(), val.get(), obs.get(), id_b, )
         # Pregunta de verificacion
         if self.messageAsk("Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción"):
             fila = self.run_query(query, parameters, 2)
-            print(fila)
             if isinstance(fila, int):
                 self.messageShow(f"Todo salio correcto\n se actualizaron {fila} filas")
+                for i in range(4):
+                    parameters[i].delete(0, "end")
             else: self.messageShow(f"Se ha detectado un error: {fila}", 2)
         else:
             self.messageShow("Correcto se revirtio la accion")
@@ -218,7 +235,6 @@ class Model(View):
     def fill_admin_table_sup(self, busqueda = (), w_quest = "1"):
         # limpiamos tabla
         records = self.admin_table_sup.get_children()
-        print (records)
         for element in records:
             self.admin_table_sup.delete(element)
         
@@ -232,11 +248,186 @@ class Model(View):
         else:
             for data in busqueda:
                 valor = busqueda_personalizada + data
-                print(valor)
                 query = f"SELECT * FROM supervisor_area_kino WHERE {valor}"
                 fetch = self.run_query(query)
                 for row in fetch:
                     self.admin_table_sup.insert("", "end", text=row[0], values = (row[1], row[2], row[3]))
+    
+    def fill_workers_table(self, id_busqueda = []):
+        # limpiamos tabla
+        records = self.table_workers_sup.get_children()
+        for element in records:
+            self.table_workers_sup.delete(element)
+        # rellenamos tabla
+        for row in id_busqueda:
+            query = "SELECT * FROM personal_laborando WHERE id_area = %s"
+            fetch = self.run_query(query, (row, ))
+            if isinstance(fetch, list) and len(fetch) > 0:
+                for prs in fetch:
+                    self.table_workers_sup.insert("", "end", text = prs[0], values = (prs[1], prs[2], prs[3], prs[4], prs[5]))
+            else: self.table_workers_sup.insert("", "end", text = "No hay personal en esta area", values = ("X", "X", "X", "X", "X"))
+    
+    def get_ci_sups(self):
+        query = "SELECT cedula FROM supervisor_area_kino"
+        fetch = self.run_query(query)
+        return fetch
+    
+    def selec_zone_admin_table(self):
+        try:
+            nm_area_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][0]
+            cdg_zona_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][1]
+            id_sup_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][2]
+            return (nm_area_old, cdg_zona_old, str(id_sup_old))
+        except Exception as e:
+            self.messageShow(f"{e} debe seleccionar una fila", 2)
+            return 0
+    
+    def delete_workers_sup(self, id_areasT : list):
+        # pedir la data
+        old_values = self.selec_workers_table()
+        query = "DELETE FROM personal_laborando WHERE nombre = %s AND cedula = %s"
+        if self.messageAsk(f"Esta seguro que desea eliminar para siempre al empleado {old_values[0]}"):
+            rowcount = self.run_query(query, (old_values[0], old_values[2], ), 2)
+            if isinstance(rowcount, int):
+                self.messageShow(f"Se elimino al empleado = {old_values}")
+                self.fill_workers_table(id_areasT)
+        else: 
+            self.messageShow("Se revirtieron las acciones")
+            return
+    
+    def query_add_worker(self, parameters = ()):
+        params_get = (parameters[0].get(), parameters[1].get(), parameters[2].get(), parameters[3].get(), parameters[4].get())
+        query = """INSERT INTO personal_laborando(nombre, apellido, cedula, fecha_nacimiento, id_area)
+                    VALUES (%s, %s, %s, %s, %s)"""
+        rowcount = self.run_query(query, params_get, 2)
+        if isinstance(rowcount, int):
+            self.messageShow(f"Se inserto {rowcount} empleado")
+            # limpiando entrys
+            for entry in parameters:
+                entry.delete(0, "end")
+        else: 
+            self.messageShow(f"Ocurrio un error al insertar, por favor llene todas las casillas", 2)
+            print(rowcount)
+    
+    def query_update_worker(self, parameters = (), old_params = ()):
+        params_get = (parameters[0].get(), parameters[1].get(), parameters[2].get(), parameters[3].get(), parameters[4].get())
+        query = """UPDATE personal_laborando
+                    SET nombre = %s, apellido = %s, cedula = %s, fecha_nacimiento = %s, id_area = %s
+                    WHERE nombre = %s AND cedula = %s"""
+        tlt_params = params_get + (old_params[0], old_params[2], )
+        rowcount = self.run_query(query, tlt_params)
+        if rowcount > 0 and isinstance(rowcount, int):
+            self.messageShow(f"Se actualizo {rowcount} empleado")
+            # limpiando entrys
+            for entry in parameters:
+                entry.delete(0, "end")
+        else: 
+            self.messageShow(f"Ocurrio un error al actualizar, por favor llene todas las casillas", 2)
+            print(rowcount)
+    
+    def selec_workers_table(self):
+        try:
+            nm_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][0]
+            lnm_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][1]
+            ci_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][2]
+            date_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][3]
+            id_a_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][4]
+            old_values = (nm_worker_old, lnm_worker_old, ci_worker_old, date_worker_old, id_a_worker_old)
+            return old_values
+        except Exception as e:
+            self.messageShow(f"{e} | debe seleccionar una fila de trabajadores", 2)
+            return 0
+    
+    def selec_bienes_table(self):
+        try:
+            cnt_old = self.tablero_sup.item(self.tablero_sup.selection())["values"][0]
+            nmC_old = self.tablero_sup.item(self.tablero_sup.selection())["values"][1]
+            descI_old = self.tablero_sup.item(self.tablero_sup.selection())["values"][2]
+            val_old = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
+            obs_old = self.tablero_sup.item(self.tablero_sup.selection())["values"][4]
+            return (cnt_old, nmC_old, descI_old, val_old, obs_old, )
+        except Exception as e:
+            self.messageShow(f"{e} | debe seleccionar una fila de trabajadores", 2)
+            return 0
+    
+    def query_add_bienes(self, params = ()):
+        # pedir data selection
+        old_values = self.selec_bienes_table()
+        params_get = (params[0].get(), params[1].get(), params[2].get(), params[3].get(), params[4].get())
+        if old_values == 0: return
+        query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion)
+                    VALUES(%s, %s, %s, %s, %s)"""
+        rowcount = self.run_query(query, params_get)
+        if isinstance(rowcount, int):
+            self.messageShow(f"Se agrego {rowcount} filas")
+            for entry in params:
+                entry.delete(0, "end")
+        else:
+            self.messageShow(f"error: {rowcount}", 2)
+    
+    def delete_bn_query(self, id_data_r : list):
+        # data
+        old_values = self.selec_bienes_table()
+        if old_values == 0: return
+        query="DELETE FROM bienes_por_zona WHERE desc_item = %s AND num_cons = %s"
+        if self.messageAsk(f"Esta seguro de eliminar el bien {old_values}"):
+            rowcount = self.run_query(query, (old_values[2], old_values[1], ), 2)
+            if isinstance(rowcount, int):
+                self.messageShow(f"Se elimino el bien {old_values}")
+                self.rellenar_tabla_sup(id_data_r)
+        else: self.messageshow("Se revirtieron las acciones")
+    
+    def delete_zone_tpl(self):
+        old_values = self.selec_zone_admin_table()
+        if old_values == 0: return
+        # datos
+        query = "DELETE FROM areas_trabajo_kino WHERE nombre_area = %s AND codigo_zona = %s AND id_supervisor = %s"
+        rowcount = self.run_query(query, old_values, 2)
+        self.back_zone_toplevel()
+        return rowcount
+    
+    def query_busqueda_sup_zone(self, ci_old : str):
+        query = "SELECT cedula FROM supervisor_area_kino WHERE id_supervisor = %s"
+        fetch = self.run_query(query, (ci_old, ))
+        return fetch
+    
+    def get_id_sup_byCi(self, ci : str):
+        query = "SELECT id_supervisor FROM supervisor_area_kino WHERE cedula = %s"
+        fetch = self.run_query(query, (ci, ))
+        if isinstance(fetch, list): return fetch[0][0]
+        else: self.messageShow(f"Error {fetch}", 2)
+    
+    def query_update_zone(self, parameters = ()):
+        id_sup = self.get_id_sup_byCi(parameters[2])
+        values = (parameters[0], parameters[1], id_sup, parameters[3], parameters[4], )
+        print(values)
+        query = "UPDATE areas_trabajo_kino SET nombre_area= %s, codigo_zona = %s, id_supervisor= %s WHERE nombre_area= %s AND codigo_zona = %s"
+        rowcount = self.run_query(query, values, 2)
+        if isinstance(rowcount, int): 
+            self.messageShow(f"Todo salio correctamente se actualizaron {rowcount} filas")
+            self.back_zone_toplevel()
+        else: self.messageShow(f"{rowcount} error...")
+    
+    def query_add_zone(self, parameters = ()):
+        id_sup = self.get_id_sup_byCi(parameters[2])
+        values = (parameters[0], parameters[1], str(id_sup), )
+        print(values)
+        query = "INSERT INTO areas_trabajo_kino(nombre_area, codigo_zona, id_supervisor) VALUES (%s, %s, %s)"
+        rowcount = self.run_query(query, values, 2)
+        if isinstance(rowcount, int): 
+            self.messageShow(f"Todo salio correctamente se agregaron {rowcount} filas")
+            self.back_zone_toplevel()
+        else: self.messageShow(f"{rowcount} error...")
+    
+    def sesion_sup_query(self, parameters = ()):
+        query = "SELECT * FROM supervisor_area_kino WHERE cedula = %s AND nombre = %s"
+        fetch = self.run_query(query, parameters)
+        if isinstance(fetch, list) and len(fetch) > 0: 
+            self.main_sup_panel(str(fetch[0][0]), fetch[0][1])
+            
+        else:
+            self.messageShow(f"No coincide la sesion, please try again")
+            return
     
     def select_admin_table_sup(self):
         try:
@@ -280,6 +471,11 @@ class Model(View):
             if isinstance(fila, int) == True:
                 print(fila, "El delete salio bien L-279")
             else: print(fila)
+    
+    def fill_zona_treeview(self):
+        query = "SELECT * FROM areas_trabajo_kino"
+        fetch = self.run_query(query)
+        return fetch
     
     def topLevel_admin_interface_delete(self):
         # testeando seleccion
