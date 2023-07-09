@@ -17,6 +17,7 @@ class View(Model):
         print(type(self.window))
         self.window.geometry("640x480")
         self.window.title("Bienes Muebles Kino Tachira")
+        # self.window.rezisable(width=None, height=None)
         
         # Label Titulo Main
         label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
@@ -28,14 +29,6 @@ class View(Model):
         
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.sesion_public_main).grid(row=3, column=1)
-        # Condicion admin
-        
-        # condicion superviso
-        
-        # Condicion publica
-        
-        # test
-        
         # Pie de ventana
         self.pie_pagina()
         
@@ -74,27 +67,33 @@ class View(Model):
         # top level
         self.toplevel_public_sesion = Toplevel(self.window)
         self.toplevel_public_sesion.title("Sesion de trabajadores")
-        self.toplevel_public_sesion.geometry("300x200")
-        Label(self.toplevel_public_sesion, text="Ingrese su numero de cedula").grid(row=0, column=0)
-        cedula = ttk.Entry(self.toplevel_public_sesion)
-        cedula.grid(row=1, column=0)
-        ttk.Button(self.toplevel_public_sesion, text="Ingresar", command = lambda : self.public_main(cedula.get(), )).grid(row=2, column=0, columnspan=2)
+        self.toplevel_public_sesion.resizable(width=None, height=None)
+        self.toplevel_public_sesion.grab_set()
+        Label(self.toplevel_public_sesion, text="Ingrese su numero de cedula").grid(row=0, column=0, padx=50, pady=(25, 10), columnspan=2)
+        # validaciones
+        validacion_limiteInt = self.toplevel_public_sesion.register(self.validacion_limite_int)
+        cedula = ttk.Entry(self.toplevel_public_sesion, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
+        cedula.grid(row=1, column=0, padx=50, pady=(0, 25), columnspan=2)
+        ttk.Button(self.toplevel_public_sesion, text="Ingresar", command = lambda : self.public_main(cedula.get(), )).grid(row=2, column=0, padx=(50, 5))
+        ttk.Button(self.toplevel_public_sesion, text="Regresar", command = lambda : self.toplevel_public_sesion.destroy()).grid(row=2, column=1, padx=(5, 50))
     
     
     
     def public_main(self, ci : str):
         datos = self.log_public_sesion(parameters = (ci, ))
-        if isinstance(datos, list):
+        if isinstance(datos, list) and len(datos) > 0:
             self.messageShow(f"Bienvenido {datos[0][1]}")
-        else:
-            self.messageShow(datos, 2)
+        elif datos == []:
+            self.messageShow(f"No se encontraron registros", 2)
             return
-        
+        else:  self.messageShow(datos, 2)
         # limpiar ventana principal
         self.limpiar_ventana()
         # generar nuevos labels
+        # configurando validacion
+        validacion_limiteStr = self.window.register(self.validacion_limite_str)
         title = Label(self.window, text="Digite el codigo del QR\nCon el cual se hará la busqueda").grid(row=0, column=0)
-        code = Entry(self.window, width=24)
+        code = Entry(self.window, width=24, validate="key", validatecommand=(validacion_limiteStr, "%P", 25))
         code.focus()
         code.grid(row=0, column=1)
         boton_load = ttk.Button(self.window, text="Buscar", command= lambda : self.sector_trabajo_query(code.get()))
@@ -128,41 +127,47 @@ class View(Model):
     def toplevel_login_admin(self):
         self.toplevel_admin = Toplevel()
         self.toplevel_admin.title("Sesion de Administrador")
+        # configurando validaciones
+        validacion_limiteStr = self.toplevel_admin.register(self.validacion_limite_str)
+        self.toplevel_admin.grab_set()
         #  planteando sesion de administrador
-        Label(self.toplevel_admin, text="Inicia como administrador").grid(row=0, column=0, columnspan=2, pady=10)
-        Label(self.toplevel_admin, text="Ingresa\nUsuario").grid(row=1, column=0)
-        user_adm = Entry(self.toplevel_admin)
-        user_adm.grid(row=1, column=1, padx=5)
+        Label(self.toplevel_admin, text="Inicia como administrador").grid(row=0, column=0, columnspan=2, padx=(50, 50), pady=(15, 10))
+        Label(self.toplevel_admin, text="Ingresa\nUsuario").grid(row=1, column=0, padx=(50, 0), pady=(0, 10))
+        user_adm = Entry(self.toplevel_admin, validate="key", validatecommand=(validacion_limiteStr, "%P", 32))
+        user_adm.grid(row=1, column=1, padx=(0, 50), pady=(0, 10))
+        user_adm.focus()
         # password
-        Label(self.toplevel_admin, text="Ingrese\nContraseña").grid(row=2, column=0)
-        password_adm = Entry(self.toplevel_admin)
-        password_adm.grid(row=2, column=1, padx=5)
+        Label(self.toplevel_admin, text="Ingrese\nContraseña").grid(row=2, column=0, padx=(50, 0), pady=(0, 10))
+        password_adm = Entry(self.toplevel_admin, validate="key", validatecommand=(validacion_limiteStr, "%P", 16), show="*")
+        password_adm.grid(row=2, column=1, padx=(0, 50), pady=(0, 10))
         # button
-        ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10)
+        ttk.Button(self.toplevel_admin, text="Ingresar", command = lambda : self.log_adm_sesion(user_adm.get(), password_adm.get())).grid(row=3, column=0, columnspan=2, pady=10, padx=50)
     
     def window_after_query_work(self, zona, id):
         # Titulo
         Label(self.window, text=f"Registro de Bienes de {zona}").grid(row=0, column=0, columnspan=2)
-        
+        # configurando validaciones
+        validacion_limiteStr = self.window.register(self.validacion_limite_str)
+        validacion_limiteInt = self.window.register(self.validacion_limite_int)
         # añadiendo formulario
         Label(self.window, text="Digite cantidad de elementos").grid(row=1, column=1)
-        self.cantidad = Entry(self.window)
+        self.cantidad = Entry(self.window, validate="key", validatecommand=(validacion_limiteInt, "%P", 4))
         self.cantidad.grid(row=1, column=0)
         
         Label(self.window, text="Digite cantidad de numero de consulta").grid(row=2, column=1)
-        self.num_cons = Entry(self.window)
+        self.num_cons = Entry(self.window, validate="key", validatecommand=(validacion_limiteInt, "%P", 6))
         self.num_cons.grid(row=2, column=0)
         
         Label(self.window, text="Digite descripcion del item").grid(row=3, column=1)
-        self.desc_item = Entry(self.window)
+        self.desc_item = Entry(self.window, validate="key", validatecommand=(validacion_limiteStr, "%P", 64))
         self.desc_item.grid(row=3, column=0)
         
         Label(self.window, text="Digite valor en Bs").grid(row=4, column=1)
-        self.valor = Entry(self.window)
+        self.valor = Entry(self.window, validate="key", validatecommand=(validacion_limiteStr, "%P", 8))
         self.valor.grid(row=4, column=0)
         
         Label(self.window, text="Digite observacion").grid(row=5, column=1)
-        self.observ = Entry(self.window)
+        self.observ = Entry(self.window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         self.observ.grid(row=5, column=0)
         
         # Boton guardar data
@@ -180,14 +185,17 @@ class View(Model):
         self.sesion_level.title("Inicio de sesion del supervisor de area")
         # focus
         self.sesion_level.grab_set()
-        Label(self.sesion_level, text="Sesion de Supervisores").grid(row=0, column=0, columnspan=2)
-        Label(self.sesion_level, text="Para verificar si tiene permisos\ncomo supervisor digite su numero de cedula").grid(row=1, column=0)
-        ci_sesion = Entry(self.sesion_level)
-        ci_sesion.grid(row=1, column=1)
+        # configurando validaciones
+        validacion_limiteStr = self.sesion_level.register(self.validacion_limite_str)
+        validacion_limiteInt = self.sesion_level.register(self.validacion_limite_int)
+        Label(self.sesion_level, text="Sesion de Supervisores").grid(row=0, column=0, columnspan=2, padx=50, pady=(5, 15))
+        Label(self.sesion_level, text="Para verificar si tiene permisos\ncomo supervisor digite su numero de cedula").grid(row=1, column=0, padx=(50, 0), pady=(0, 10))
+        ci_sesion = Entry(self.sesion_level, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
+        ci_sesion.grid(row=1, column=1, padx=(0, 50), pady=(0, 10))
         # nombre
-        Label(self.sesion_level, text="Digite el nombre del supervisor").grid(row=2, column=0)
-        nm_sesion = ttk.Entry(self.sesion_level)
-        nm_sesion.grid(row=2, column=1)
+        Label(self.sesion_level, text="Digite el nombre del supervisor").grid(row=2, column=0, padx=(50,0), pady=(5, 15))
+        nm_sesion = ttk.Entry(self.sesion_level, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
+        nm_sesion.grid(row=2, column=1, padx=(0,50), pady=(5, 15))
         ttk.Button(self.sesion_level, text="Ingresar", command= lambda: self.sesion_sup_query(parameters = (ci_sesion.get(), nm_sesion.get(), ))).grid(row=3, column=0, columnspan=2)
     
     def main_sup_panel(self, id_sup : str, name : str):
@@ -240,28 +248,30 @@ class View(Model):
         # Generando top level
         self.bienes_add_topl = Toplevel()
         self.bienes_add_topl.title("Ventana para agregar bienes")
-        # geometry
+        # configurando validaciones
+        validacion_limiteStr = self.bienes_add_topl.register(self.validacion_limite_str)
+        validacion_limiteInt = self.bienes_add_topl.register(self.validacion_limite_int)
         # focus
         self.bienes_add_topl.grab_set()
         # labels
         Label(self.bienes_add_topl, text="Digite cantidad").grid(row=0, column=0, columnspan=2)
-        cnt_bn = ttk.Entry(self.bienes_add_topl)
+        cnt_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteInt, "%P", 4))
         cnt_bn.grid(row=1, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite numero de consulta").grid(row=2, column=0, columnspan=2)
-        nmC_bn = ttk.Entry(self.bienes_add_topl)
+        nmC_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteInt, "%P", 6))
         nmC_bn.grid(row=3, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite descripcion del item").grid(row=4, column=0, columnspan=2)
-        descI_bn = ttk.Entry(self.bienes_add_topl)
+        descI_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteStr, "%P", 64))
         descI_bn.grid(row=5, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite valor del bienmueble").grid(row=6, column=0, columnspan=2)
-        val_bn = ttk.Entry(self.bienes_add_topl)
+        val_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteStr, "%P", 8))
         val_bn.grid(row=7, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite observacion").grid(row=8, column=0, columnspan=2)
-        obs_bn = ttk.Entry(self.bienes_add_topl)
+        obs_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         obs_bn.grid(row=9, column=0, padx=10)
         # botones
         ttk.Button(self.bienes_add_topl, text="Agregar", command = lambda : self.query_add_bienes(params = (cnt_bn,
@@ -311,17 +321,20 @@ class View(Model):
     def add_workers_sup(self, name_supT : str, id_areasT = []):
         # limpiar ventana toplevel workers
         self.limpiar_ventana(4)
+        # configurando validaciones
+        validacion_limiteStr = self.worker_toplevel_sup.register(self.validacion_limite_str)
+        validacion_limiteInt = self.worker_toplevel_sup.register(self.validacion_limite_int)
         # D
         Label(self.worker_toplevel_sup, text = "Nombre").grid(row=0, column=0)
-        nm_w = ttk.Entry(self.worker_toplevel_sup)
+        nm_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_w.grid(row=0, column=1)
         
         Label(self.worker_toplevel_sup, text = "Apellido").grid(row=1, column=0)
-        lnm_w = ttk.Entry(self.worker_toplevel_sup)
+        lnm_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         lnm_w.grid(row=1, column=1)
         
         Label(self.worker_toplevel_sup, text = "Cedula").grid(row=2, column=0)
-        ci_w = ttk.Entry(self.worker_toplevel_sup)
+        ci_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
         ci_w.grid(row=2, column=1)
         
         Label(self.worker_toplevel_sup, text = "Fecha\nde nacimiento").grid(row=3, column=0)
@@ -354,18 +367,21 @@ class View(Model):
             return
         # limpiar ventana toplevel workers
         self.limpiar_ventana(4)
+        # configurando validaciones
+        validacion_limiteStr = self.worker_toplevel_sup.register(self.validacion_limite_str)
+        validacion_limiteInt = self.worker_toplevel_sup.register(self.validacion_limite_int)
         # D
         Label(self.worker_toplevel_sup, text = "Nombre").grid(row=0, column=0)
-        nm_w = ttk.Entry(self.worker_toplevel_sup)
+        nm_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_w.grid(row=0, column=1)
         Label(self.worker_toplevel_sup, text = f"Nombre actual = {old_data[0]}", relief="sunken")
         
         Label(self.worker_toplevel_sup, text = "Apellido").grid(row=1, column=0)
-        lnm_w = ttk.Entry(self.worker_toplevel_sup)
+        lnm_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         lnm_w.grid(row=1, column=1)
         
         Label(self.worker_toplevel_sup, text = "Cedula").grid(row=2, column=0)
-        ci_w = ttk.Entry(self.worker_toplevel_sup)
+        ci_w = ttk.Entry(self.worker_toplevel_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
         ci_w.grid(row=2, column=1)
         
         Label(self.worker_toplevel_sup, text = "Fecha\nde nacimiento").grid(row=3, column=0)
@@ -398,13 +414,15 @@ class View(Model):
     def up_data_sup(self):
         # Verificamos que seleccione un registro
         try:
-            self.tablero_sup.item(self.tablero_sup.selection())["text"]
-        except IndexError as e:
+            # Generando variables de tablero
+            id_product = self.tablero_sup.item(self.tablero_sup.selection())["text"]
+            num_cons = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
+        except Exception as e:
             self.messageShow("Favor seleccionar un registro para actualizar", 2)
             return
-        # Generando variables de tablero
-        id_product = self.tablero_sup.item(self.tablero_sup.selection())["text"]
-        num_cons = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
+        # configurando validaciones
+        validacion_limiteStr = self.ventana_act_sup.register(self.validacion_limite_str)
+        validacion_limiteInt = self.ventana_act_sup.register(self.validacion_limite_int)
         # Generamos nueva ventana para actualizar data
         self.ventana_act_sup = Toplevel(self.window)
         self.ventana_act_sup.title("Actualizar data de registros")
@@ -413,23 +431,23 @@ class View(Model):
         Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}").grid(row=0, column=2)
         
         Label(self.ventana_act_sup, text="Cantidad").grid(row=1, column=0)
-        cnt = Entry(self.ventana_act_sup)
+        cnt = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 4))
         cnt.grid(row=1, column=1)
         
         Label(self.ventana_act_sup, text="Numero de consultas").grid(row=2, column=0)
-        nm_c = Entry(self.ventana_act_sup)
+        nm_c = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 6))
         nm_c.grid(row=2, column=1)
         
         Label(self.ventana_act_sup, text="Descripcion del item").grid(row=3, column=0)
-        desc_item = Entry(self.ventana_act_sup)
+        desc_item = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 64))
         desc_item.grid(row=3, column=1)
         
         Label(self.ventana_act_sup, text="Valor").grid(row=4, column=0)
-        val = Entry(self.ventana_act_sup)
+        val = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 8))
         val.grid(row=4, column=1)
         
         Label(self.ventana_act_sup, text="Observacion").grid(row=5, column=0)
-        obs = Entry(self.ventana_act_sup)
+        obs = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         obs.grid(row=5, column=1)
         # Falta agregar botones, y hacer las consultas update
         # Botones
@@ -521,15 +539,18 @@ class View(Model):
         print(old_values)
         # limpiar toplevel
         self.limpiar_ventana(3)
+        # configurando validaciones
+        validacion_limiteStr = self.zona_toplevel.register(self.validacion_limite_str)
+        validacion_limiteInt = self.zona_toplevel.register(self.validacion_limite_int)
         # widgedts
         Label(self.zona_toplevel, text="Nombre de area").grid(row=0, column=0)
         Label(self.zona_toplevel, text=f"area actual = {old_values[0]}", relief="sunken").grid(row=1, column=1)
-        nm_area = ttk.Entry(self.zona_toplevel)
+        nm_area = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_area.grid(row=1, column=0, pady=8)
         
         Label(self.zona_toplevel, text="Codigo de area").grid(row=2, column=0)
         Label(self.zona_toplevel, text=f"codigo actual ={old_values[1]}", relief="sunken").grid(row=3, column=1)
-        cdg_area = ttk.Entry(self.zona_toplevel)
+        cdg_area = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         cdg_area.grid(row=3, column=0, pady=8)
         # busqueda id -> cedula supervisor
         ci_id = self.query_busqueda_sup_zone(old_values[2])
@@ -556,13 +577,16 @@ class View(Model):
     def add_zone_tpl(self):
         # limpiar toplevel
         self.limpiar_ventana(3)
+        # configurando validaciones
+        validacion_limiteStr = self.zona_toplevel.register(self.validacion_limite_str)
+        validacion_limiteInt = self.zona_toplevel.register(self.validacion_limite_int)
         # agregando widgets al toplevel
         Label(self.zona_toplevel, text="Agregar el nombre del area de trabajo").grid(row=0, column=0, pady=10)
-        nm_a = ttk.Entry(self.zona_toplevel)
+        nm_a = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_a.grid(row=0, column=1, pady=10)
         
         Label(self.zona_toplevel, text="Agregar el codigo del area de trabajo").grid(row=1, column=0, pady=10)
-        cdg_a = ttk.Entry(self.zona_toplevel)
+        cdg_a = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 16))
         cdg_a.grid(row=1, column=1, pady=10)
         
         Label(self.zona_toplevel, text="Seleccionar supervisor designado para el area").grid(row=2, column=0, pady=10)
@@ -610,21 +634,23 @@ class View(Model):
         if len(old_data) <= 0:
             self.messageShow("Se debe seleccionar un registro", 2)
             return
-        
+        # configurando validaciones
+        validacion_limiteStr = self.update_window.register(self.validacion_limite_str)
+        validacion_limiteInt = self.update_window.register(self.validacion_limite_int)
         # agregando labels
         Label(self.update_window, text=f"Antigua información : {old_data[0]}").grid(row=0, column=0)
         Label(self.update_window, text="Nombre del supervisor\nQue se actualizará").grid(row=1, column=0)
-        name = Entry(self.update_window)
+        name = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         name.grid(row=1, column=1)
         
         Label(self.update_window, text=f"Antigua información : {old_data[1]}").grid(row=2, column=0)
         Label(self.update_window, text="Apellido del supervisor\nQue se actualizará").grid(row=3, column=0)
-        last_name = Entry(self.update_window)
+        last_name = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 32))
         last_name.grid(row=3, column=1)
         
         Label(self.update_window, text=f"Antigua información : {old_data[2]}").grid(row=4, column=0)
         Label(self.update_window, text="Cedula del supervisor\nQue se actualizará").grid(row=5, column=0)
-        dni = Entry(self.update_window)
+        dni = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
         dni.grid(row=5, column=1)
         
         # query
@@ -642,17 +668,20 @@ class View(Model):
         self.add_window = Toplevel(self.window)
         print(type(self.add_window))
         self.add_window.title("Ventana de agregar")
+        # configurando validaciones
+        validacion_limiteStr = self.add_window.register(self.validacion_limite_str)
+        validacion_limiteInt = self.add_window.register(self.validacion_limite_int)
         # Labels
         Label(self.add_window, text="Nombre del supervisor nuevo").grid(row=0, column=0)
-        name = Entry(self.add_window)
+        name = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         name.grid(row=0, column=1)
         
         Label(self.add_window, text="Apellido del supervisor nuevo").grid(row=1, column=0)
-        last_name = Entry(self.add_window)
+        last_name = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         last_name.grid(row=1, column=1)
         
         Label(self.add_window, text="Cedula del supervisor nuevo").grid(row=2, column=0)
-        dni = Entry(self.add_window)
+        dni = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
         dni.grid(row=2, column=1)
         # data
         # boton
@@ -687,12 +716,15 @@ class View(Model):
     def toplevel_admin_addW(self):
         # Limpiar ventana
         self.limpiar_ventana(opc = 2)
+        # configurando validaciones
+        validacion_limiteStr = self.toplevel_admin_window.register(self.validacion_limite_str)
+        validacion_limiteInt = self.toplevel_admin_window.register(self.validacion_limite_int)
         # Formulario
         Label(self.toplevel_admin_window, text="Ingresar Usuario").grid(row=0, column=0)
-        user = ttk.Entry(self.toplevel_admin_window)
+        user = ttk.Entry(self.toplevel_admin_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 32))
         user.grid(row=0, column=1)
         Label(self.toplevel_admin_window, text="Ingresar Contraseña").grid(row=1, column=0)
-        password = ttk.Entry(self.toplevel_admin_window)
+        password = ttk.Entry(self.toplevel_admin_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 16))
         password.grid(row=1, column=1)
         # Volver
         ttk.Button(self.toplevel_admin_window, text="Volver", command = self.topLevel_admin_i).grid(row=2, column=0)

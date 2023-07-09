@@ -70,6 +70,34 @@ class Model():
                 conn.close()
                 print("Se ha finalizado la conexion")
     
+    def validacion_limite_str(self, text, limite):
+        if len(text) < int(limite):
+            return True
+        else:
+            return False
+    
+    def validacion_limite_int(self, text, limit):
+        if text.isdigit() and len(text) <= int(limit):
+            return True
+        elif text == "":
+            return True
+        else:
+            return False
+    
+    def validar_valor_flotante(self, valor):
+        try:
+            float(valor)
+            return True
+        except ValueError:
+            return False
+    
+    def validar_valor_entero(self, valor):
+        try:
+            int(valor)
+            return True
+        except ValueError:
+            return False
+    
     def obtener_directorio(self):
         directorio = os.getcwd()
         print("Directorio: ",directorio)
@@ -107,8 +135,13 @@ class Model():
     def safe_bm_data(self, id, cnt, nc, di, vlr, obs):
         sql = """INSERT INTO bienes_por_zona(id_area, cantidad, num_cons, desc_item, valor, observacion)
                 VALUES(?, ?, ?, ?, ? ,?)"""
-        parameters = (id, cnt, nc, di, vlr, obs)
-        fila =  self.run_query(sql, parameters, 2)
+        # validar flotante o entero de valor
+        if self.validar_valor_flotante(vlr) or self.validar_valor_entero(vlr):
+            parameters = (id, cnt, nc, di, vlr, obs)
+            fila =  self.run_query(sql, parameters, 2)
+        else:
+            self.messageShow("Error numerico en la entrada valor Bs", 2)
+            return
         
         # limpiando formulario
         if isinstance(fila, int):self.messageShow(f"Se subio correctamente los datos, {fila}")
@@ -157,16 +190,20 @@ class Model():
         query = """UPDATE bienes_por_zona SET cantidad = ?, num_cons = ?, desc_item = ?, valor = ?, observacion = ?
                 WHERE id_bienes = ?"""
         parameters = (cnt.get(), nm_c.get(), desc_item.get(), val.get(), obs.get(), id_b, )
-        # Pregunta de verificacion
-        if self.messageAsk("Esta seguro que desea modificar los valores?\nNo hay control 'Z' para esta acción"):
-            fila = self.run_query(query, parameters, 2)
-            if isinstance(fila, int):
-                self.messageShow(f"Todo salio correcto\n se actualizaron {fila} filas")
-                for i in range(4):
-                    parameters[i].delete(0, "end")
-            else: self.messageShow(f"Se ha detectado un error: {fila}", 2)
-        else:
-            self.messageShow("Correcto se revirtio la accion")
+        if self.validar_valor_flotante(val.get()) or self.validar_valor_entero(val.get()):
+            # Pregunta de verificacion
+            if self.messageAsk("Esta seguro que desea modificar los valores?\nNo hay control vuelta atras para esta acción"):
+                fila = self.run_query(query, parameters, 2)
+                if isinstance(fila, int):
+                    self.messageShow(f"Todo salio correcto\n se actualizaron {fila} filas")
+                    for i in range(4):
+                        parameters[i].delete(0, "end")
+                else: self.messageShow(f"Se ha detectado un error: {fila}", 2)
+            else:
+                self.messageShow("Correcto se revirtio la accion")
+                return
+        else: 
+            self.messageShow("Verificar que el valor del precio sea numerico", 2)
             return
     
     def create_qr_code(self):
@@ -214,13 +251,14 @@ class Model():
         else: print(filas)
     
     def log_adm_sesion(self, user, password):
+        if user=="" and password=="":
+            self.messageShow("Rellenar los campos")
+            return
         query = "SELECT * FROM administrador WHERE usuario = ? AND clave = ?"
         parameters = (user, password, )
         fetch = self.run_query(query, parameters)
-        print(fetch)
-        if isinstance(fetch, str) == True:
-            print("Contraseña incorrecta L474")
-            self.messageShow(f"Contraseña incorrecta", 2)
+        if isinstance(fetch, str) == True or fetch==[]:
+            self.messageShow(f"Contraseña incorrecta o usuario incorrecto", 2)
             return
         else:
             # asignando valores
@@ -354,16 +392,20 @@ class Model():
         # pedir data selection
         old_values = self.selec_bienes_table()
         params_get = (params[0].get(), params[1].get(), params[2].get(), params[3].get(), params[4].get())
-        if old_values == 0: return
-        query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion)
-                    VALUES(%s, %s, %s, %s, %s)"""
-        rowcount = self.run_query(query, params_get)
-        if isinstance(rowcount, int):
-            self.messageShow(f"Se agrego {rowcount} filas")
-            for entry in params:
-                entry.delete(0, "end")
+        if self.validar_valor_flotante(params_get[3]) or self.validar_valor_entero(params_get[3]):
+            if old_values == 0: return
+            query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion)
+                        VALUES(%s, %s, %s, %s, %s)"""
+            rowcount = self.run_query(query, params_get)
+            if isinstance(rowcount, int):
+                self.messageShow(f"Se agrego {rowcount} filas")
+                for entry in params:
+                    entry.delete(0, "end")
+            else:
+                self.messageShow(f"error: {rowcount}", 2)
         else:
-            self.messageShow(f"error: {rowcount}", 2)
+            self.messageShow("Verificar la entrada de valor Bs que sea numerico", 2)
+            return
     
     def delete_bn_query(self, id_data_r : list):
         # data
