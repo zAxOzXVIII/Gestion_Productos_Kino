@@ -240,12 +240,12 @@ class View(Model):
         ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=4, column=2)
         # bienes
         ttk.Button(self.window, text="Empleados configuracion", command = lambda : self.main_worker_tpl(name, id_area)).grid(row=1, column=3)
-        ttk.Button(self.window, text="Agregar Bienes", command = self.add_bn_tpl).grid(row=2, column=3)
+        ttk.Button(self.window, text="Agregar Bienes", command = lambda : self.add_bn_tpl(id_sup)).grid(row=2, column=3)
         ttk.Button(self.window, text="Eliminar Bienes", command = lambda : self.delete_bn_query(id_area)).grid(row=3, column=3)
         # pie de pagina
         self.pie_pagina(0, 3)
     
-    def add_bn_tpl(self):
+    def add_bn_tpl(self, sup_id):
         # Generando top level
         self.bienes_add_topl = Toplevel()
         self.bienes_add_topl.title("Ventana para agregar bienes")
@@ -274,14 +274,24 @@ class View(Model):
         Label(self.bienes_add_topl, text="Digite observacion").grid(row=8, column=0, columnspan=2)
         obs_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         obs_bn.grid(row=9, column=0, padx=10)
+        
+        Label(self.bienes_add_topl, text="Digite zona del bien").grid(row=10, column=0, columnspan=2)
+        lista_zonas = ["Seleccionar..."]
+        bienesL = self.get_zonas_sup_bienes((sup_id, ))
+        for val in bienesL:
+            lista_zonas.append(val[1])
+        zon_bn = ttk.Combobox(self.bienes_add_topl, value=lista_zonas, state="readonly")
+        zon_bn.set(lista_zonas[0])
+        zon_bn.grid(row=11, column=0, padx=10)
         # botones
         ttk.Button(self.bienes_add_topl, text="Agregar", command = lambda : self.query_add_bienes(params = (cnt_bn,
                                                                                                             nmC_bn,
                                                                                                             descI_bn,
                                                                                                             val_bn,
-                                                                                                            obs_bn
-                                                                                                            ))).grid(row=10, column=0)
-        ttk.Button(self.bienes_add_topl, text="Volver", command = lambda : self.bienes_add_topl.destroy()).grid(row=10, column=1)
+                                                                                                            obs_bn,
+                                                                                                            zon_bn
+                                                                                                            ))).grid(row=12, column=0)
+        ttk.Button(self.bienes_add_topl, text="Volver", command = lambda : self.bienes_add_topl.destroy()).grid(row=12, column=1)
     
     def main_worker_tpl(self, name_sup : str, id_areas = []):
         # predefiniendo nuevo toplevel

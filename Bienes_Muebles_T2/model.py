@@ -389,14 +389,12 @@ class Model():
             return 0
     
     def query_add_bienes(self, params = ()):
-        # pedir data selection
-        old_values = self.selec_bienes_table()
-        params_get = (params[0].get(), params[1].get(), params[2].get(), params[3].get(), params[4].get())
+        params_get = (params[0].get(), params[1].get(), params[2].get(), params[3].get(), params[4].get(), params[5].get())
         if self.validar_valor_flotante(params_get[3]) or self.validar_valor_entero(params_get[3]):
-            if old_values == 0: return
-            query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion)
-                        VALUES(%s, %s, %s, %s, %s)"""
-            rowcount = self.run_query(query, params_get)
+            query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion, id_area)
+                        VALUES(%s, %s, %s, %s, %s, %s)"""
+            rowcount = self.run_query(query, params_get, 2)
+            print(rowcount)
             if isinstance(rowcount, int):
                 self.messageShow(f"Se agrego {rowcount} filas")
                 for entry in params:
@@ -406,6 +404,11 @@ class Model():
         else:
             self.messageShow("Verificar la entrada de valor Bs que sea numerico", 2)
             return
+    
+    def get_zonas_sup_bienes(self, params=()):
+        query = "SELECT nombre_area, id_area FROM areas_trabajo_kino WHERE id_supervisor = %s"
+        fetch = self.run_query(query, params)
+        return fetch
     
     def delete_bn_query(self, id_data_r : list):
         # data
