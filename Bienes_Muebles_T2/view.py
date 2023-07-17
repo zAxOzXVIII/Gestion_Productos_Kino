@@ -15,7 +15,7 @@ class View(Model):
     def __init__(self, window):
         self.window = window
         print(type(self.window))
-        self.window.geometry("640x480")
+        # self.window.geometry("640x480")
         self.window.title("Bienes Muebles Kino Tachira")
         # self.window.rezisable(width=None, height=None)
         
@@ -30,26 +30,27 @@ class View(Model):
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.sesion_public_main).grid(row=3, column=1)
         # Pie de ventana
-        self.pie_pagina()
+        self.pie_pagina(0, 1)
         
     
-    def pie_pagina(self):
+    def pie_pagina(self, p1 : int, p2 : int):
         direct = self.obtener_directorio()
-        imagen = pil.Image.open(f"{direct}\\Python-Projects\\Gestion_Productos_Kino-main\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
+        imagen = pil.Image.open(f"{direct}\\Bienes_Muebles_T2\\config\\images_ui\\kino_logo.png")
         image_re = imagen.resize((64,64), pil.Image.LANCZOS)
         img_tk = ImageTk.PhotoImage(image_re)
         # obtener numero de filas
         num_filas = self.window.grid_size()[1]
+        num_columnas = self.window.grid_size()[0]
         # print(self.window.grid_size()) -> imprime la tupla de size
         # label image
         
         lbl_img = Label(self.window, image=img_tk)
-        lbl_img.grid(row=num_filas, column=1)
+        lbl_img.grid(row=num_filas, column=p2)
         lbl_img.imagen = img_tk
         
         # Label texto
         texto = "Requerimientos para Graduarse de TSU\nMarden Barrera V-30262472\nElio Sebas V-XXXXX\nDaniela Simanca V-XXXXX"
-        copy = Label(self.window, text=texto).grid(row=num_filas, column=0)
+        copy = Label(self.window, text=texto).grid(row=num_filas, column=p1)
     
     def messageShow(self, msg : str, opc = 1):
         if opc==1:
@@ -104,13 +105,13 @@ class View(Model):
         salir = ttk.Button(self.window, text="Ir al Inicio", command=self.label_main).grid(row=num_filas, column=0, columnspan=2, pady=15)
         
         # pie de ventana
-        self.pie_pagina()
+        self.pie_pagina(0, 1)
     
     def label_main(self):
         # limpiando ventana
         self.limpiar_ventana()
         # ajustando tamaño
-        self.window.geometry("640x480")
+        # self.window.geometry("640x480")
         
         label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
         Label(self.window, text="Sesion Administrador").grid(row=1, column=0)
@@ -122,7 +123,7 @@ class View(Model):
         Label(self.window, text="Publico").grid(row=3, column=0)
         boton_public = ttk.Button(self.window, text="Ingresar", command=self.sesion_public_main).grid(row=3, column=1)
         # pie de ventana
-        self.pie_pagina()
+        self.pie_pagina(0, 1)
     
     def toplevel_login_admin(self):
         self.toplevel_admin = Toplevel()
@@ -178,7 +179,7 @@ class View(Model):
         num_filas = self.window.grid_size()[1]
         salir = ttk.Button(self.window, text="Ir al Inicio", command=self.label_main).grid(row=num_filas, column=0, columnspan=2, pady=15)
         # pie pagina
-        self.pie_pagina()
+        self.pie_pagina(0, 1)
     
     def toplevel_login_sup(self):
         self.sesion_level = Toplevel(self.window)
@@ -202,7 +203,7 @@ class View(Model):
         # Limpiamos pantalla
         self.limpiar_ventana()
         # Recopilando data del id sesion
-        self.window.geometry("900x450")
+        # self.window.geometry("900x450")
         # 
         Label(self.window, text=f"Supervisor encargado {name}").grid(row=0, column=0, columnspan=3, pady=10, padx=25)
         self.tablero_sup = ttk.Treeview(self.window, height=10)
@@ -242,7 +243,7 @@ class View(Model):
         ttk.Button(self.window, text="Agregar Bienes", command = self.add_bn_tpl).grid(row=2, column=3)
         ttk.Button(self.window, text="Eliminar Bienes", command = lambda : self.delete_bn_query(id_area)).grid(row=3, column=3)
         # pie de pagina
-        self.pie_pagina()
+        self.pie_pagina(0, 3)
     
     def add_bn_tpl(self):
         # Generando top level
@@ -461,17 +462,17 @@ class View(Model):
     
     def w_admin_main(self, user):
         # Asignando a main
-        self.window.geometry("800x600")
+        # self.window.geometry("800x600")
         # Mensajes label
-        Label(self.window, text=f"Bienvenido {user}").grid(row=0, column=0, columnspan=3, pady=15)
+        Label(self.window, text=f"Bienvenido {user}", font=("Arial", 16, "bold")).grid(row=0, column=0, columnspan=3, pady=(25, 10))
         # Mostrando los supervisores en turno
-        Label(self.window, text="Tabla informativa").grid(row=1, column=0, padx=5)
         self.admin_table_sup = ttk.Treeview(self.window, height=10)
         # Asignando lugar
-        self.admin_table_sup.grid(row=1, column=1, columnspan=2, padx=5)
+        self.admin_table_sup.grid(row=1, column=0, columnspan=3, pady=(0, 15))
         # especificando columnas
         self.admin_table_sup["columns"] = ("c1", "c2", "c3")
         # Asignando nombres a las columnas
+        self.admin_table_sup.heading("#0", text="ID supervisor")
         self.admin_table_sup.heading(column= "c1", text="Nombre")
         self.admin_table_sup.heading(column= "c2", text="Apellido")
         self.admin_table_sup.heading(column= "c3", text="Cedula")
@@ -481,19 +482,19 @@ class View(Model):
         # Llenando tabla
         self.fill_admin_table_sup()
         # Botones
-        ttk.Button(self.window, text="Agregar supervisor", command = lambda : self.topLevel_admin_interface_add()).grid(row=2, column=0)
-        ttk.Button(self.window, text="Modificar Supervisor", command = lambda : self.topLevel_admin_interface_update()).grid(row=2, column=1)
-        ttk.Button(self.window, text="Eliminar Supervisor", command = lambda : self.topLevel_admin_interface_delete()).grid(row=2, column=2)
+        ttk.Button(self.window, text="Agregar supervisor", command = lambda : self.topLevel_admin_interface_add()).grid(row=2, column=0, pady=(5, 15))
+        ttk.Button(self.window, text="Modificar Supervisor", command = lambda : self.topLevel_admin_interface_update()).grid(row=2, column=1, pady=(5, 15))
+        ttk.Button(self.window, text="Eliminar Supervisor", command = lambda : self.topLevel_admin_interface_delete()).grid(row=2, column=2, pady=(5, 15))
         # Consultar usuarios admin
-        Label(self.window, text="Consultar sobre los usuarios admin disponibles").grid(row=3, column=1, columnspan=2, pady=15)
-        ttk.Button(self.window, text="Usuarios Admin", command = self.topLevel_admin_i).grid(row=3, column=0, pady= 15)
+        Label(self.window, text="Consultar sobre los usuarios admin \ndisponibles", font=("Arial", 16, "bold")).grid(row=3, column=0, columnspan=4, pady=(0, 10))
+        ttk.Button(self.window, text="Usuarios Admin", command = self.topLevel_admin_i).grid(row=4, column=0, columnspan=4, pady=(0, 10))
         # Administrar zonas del kino
-        Label(self.window, text="Administrar las zonas de trabajo").grid(row=4, column=0)
-        ttk.Button(self.window, text="Zonas de trabajo", command = self.zone_admin).grid(row=4, column=1)
+        Label(self.window, text="Administrar las zonas de \ntrabajo", font=("Arial", 16, "bold")).grid(row=5, column=0, columnspan=2, pady=(5, 10))
+        ttk.Button(self.window, text="Zonas de trabajo", command = self.zone_admin).grid(row=5, column=2, columnspan=2, pady=(5, 10))
         # Salir
-        ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=5, column=0, columnspan=2, pady=10)
+        ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=6, column=0, columnspan=4, pady=(5, 25))
         # pie de pagina
-        self.pie_pagina()
+        self.pie_pagina(1, 2)
     
     def close_zone_admin(self):
         self.zona_toplevel.grab_release()
@@ -659,11 +660,6 @@ class View(Model):
         
     
     def topLevel_admin_interface_add(self):
-        # preguntar si a se ha seleccionado
-        if self.table_selection_question_sup(): pass
-        else: 
-            self.messageShow("Se debe seleccionar un registro de la tabla supervisor", 2)
-            return
         # ventana add
         self.add_window = Toplevel(self.window)
         print(type(self.add_window))
@@ -720,15 +716,15 @@ class View(Model):
         validacion_limiteStr = self.toplevel_admin_window.register(self.validacion_limite_str)
         validacion_limiteInt = self.toplevel_admin_window.register(self.validacion_limite_int)
         # Formulario
-        Label(self.toplevel_admin_window, text="Ingresar Usuario").grid(row=0, column=0)
+        Label(self.toplevel_admin_window, text="Ingresar Usuario").grid(row=0, column=0, padx=320, pady=(50, 15))
         user = ttk.Entry(self.toplevel_admin_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 32))
         user.grid(row=0, column=1)
-        Label(self.toplevel_admin_window, text="Ingresar Contraseña").grid(row=1, column=0)
+        Label(self.toplevel_admin_window, text="Ingresar Contraseña").grid(row=1, column=0, padx=320, pady=(0, 15))
         password = ttk.Entry(self.toplevel_admin_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 16))
         password.grid(row=1, column=1)
         # Volver
-        ttk.Button(self.toplevel_admin_window, text="Volver", command = self.topLevel_admin_i).grid(row=2, column=0)
+        ttk.Button(self.toplevel_admin_window, text="Volver", command = self.topLevel_admin_i).grid(row=2, column=0, padx=(160, 0), pady=(0, 25))
         # Agregar
         ttk.Button(self.toplevel_admin_window, text="Subir", command = lambda : self.add_admin_registers(user.get(),
-                                                                                                            password.get())).grid(row=2, column=1)
+                                                                                                            password.get())).grid(row=2, column=1, padx=(0, 160), pady=(0, 25))
     

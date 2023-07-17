@@ -239,7 +239,7 @@ class Model():
             qr.make(fit=True)
             
             img = qr.make_image(fill_color="black", back_color="white")
-            img.save(self.obtener_directorio() + "\\Python-Projects\\Gestion_Productos_Kino-main\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
+            img.save(self.obtener_directorio() + "\\Bienes_Muebles_T2\\config\\images_Qr\\" + name_img + ".png")
         except Exception as e:
             print(e)
             return
@@ -563,6 +563,7 @@ class Model():
     def toplevel_admin_deleteW(self):
         try:
             self.table_admin_data.item(self.table_admin_data.selection())["text"]
+            self.table_admin_data.item(self.table_admin_data.selection())["values"][0]
         except IndexError as e:
             self.messageShow(e, 2)
             return
