@@ -506,6 +506,51 @@ class View(Model):
         # pie de pagina
         self.pie_pagina(1, 2)
     
+    def topLevel_admin_interface_delete(self):
+        # testeando seleccion
+        # Llamando query para eliminar data
+        select_data = self.select_admin_table_sup()
+        if isinstance(select_data, tuple):
+            supervisor_id = select_data[3]
+            print(supervisor_id)
+        else: 
+            self.messageShow("Error, debe seleccionar una fila", 2)
+            return
+        empleados = self.get_trabajadores_supervisor(supervisor_id)
+        print(empleados)
+        if empleados != []:
+            self.messageShow("Se le advierte que no se puede eliminar\n ya que el supervisor tiene empleados a su\n cargo", 2)
+            self.empleados_sup_mensaje(empleados)
+            return
+        else: 
+            if self.messageAsk(f"Esta seguro de eliminar el registro {select_data}"):
+                self.admin_query_customThree(3, old_info = select_data)
+                # Actualizando tabla
+                self.fill_admin_table_sup()
+            else:
+                self.messageShow("Se revirtio la eliminacion")
+                return
+    
+    def empleados_sup_mensaje(self, data = []):
+        toplevel_message = Toplevel()
+        toplevel_message.title("Lista de empleados al cargo del sup ")
+        toplevel_message.grab_set()
+        
+        tabla_empleados = ttk.Treeview(toplevel_message, height=10)
+        tabla_empleados["columns"] = ("c0", "c1", "c2", "c3", "c4",)
+        tabla_empleados.heading("#0", text="ID")
+        tabla_empleados.heading("c0", text="Nombre")
+        tabla_empleados.heading("c1", text="Apellido")
+        tabla_empleados.heading("c2", text="Cedula")
+        tabla_empleados.heading("c3", text="Fecha de nacimiento")
+        tabla_empleados.heading("c4", text="ID area")
+        tabla_empleados.grid(row=0, column=0, columnspan=2, padx=50, pady=25)
+        
+        for row in data:
+            tabla_empleados.insert("", "end", text=row[0], values=(row[1], row[2], row[3], row[4], row[5]))
+        
+        ttk.Button(toplevel_message, text="Salir", command = lambda : toplevel_message.destroy()).grid(row=1, column=0, columnspan=2, padx=50, pady=15)
+    
     def close_zone_admin(self):
         self.zona_toplevel.grab_release()
         self.zona_toplevel.destroy()

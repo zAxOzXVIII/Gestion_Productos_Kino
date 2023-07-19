@@ -90,6 +90,7 @@ class Model():
             return True
         except ValueError:
             return False
+        if valor == "": return True
     
     def validar_valor_entero(self, valor):
         try:
@@ -112,6 +113,9 @@ class Model():
         else: return fetch
     
     def sector_trabajo_query(self, code):
+        if code == "":
+            self.messageShow("Debe ingresar un codigo de qr", 2)
+            return
         # asignando la query sql
         sql = "SELECT * FROM bienes_por_zona WHERE codigo_qr = ?"
         
@@ -476,19 +480,15 @@ class Model():
     
     def select_admin_table_sup(self):
         try:
-            self.admin_table_sup.item(self.admin_table_sup.selection())["text"]
+            id_s = self.admin_table_sup.item(self.admin_table_sup.selection())["text"]
+            name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][0]
         except IndexError as e:
-            self.messageShow(e, 2)
             return
         
-        name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][0]
         last_name = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][1]
         dni = self.admin_table_sup.item(self.admin_table_sup.selection())["values"][2]
-        return (name, last_name, str(dni))
+        return (name, last_name, str(dni), id_s)
     
-    def table_selection_question_sup(self):
-        if isinstance(self.admin_table_sup.item(self.admin_table_sup.selection())["text"], int): return True
-        else: return False
     
     def admin_query_customThree(self, opc : int, old_info = (), new_info = ()):
         # tupla grande 
@@ -511,7 +511,7 @@ class Model():
                 self.three_message_interface(self.update_window, "La actualizacion salio bien")
             else: print(fila)
         elif opc == 3:
-            query = f"DELETE FROM supervisor_area_kino WHERE nombre = ? AND apellido = ? AND cedula = ?"
+            query = f"DELETE FROM supervisor_area_kino WHERE nombre = ? AND apellido = ? AND cedula = ? AND id_supervisor = ?"
             fila = self.run_query(query, old_info, 2)
             if isinstance(fila, int) == True:
                 print(fila, "El delete salio bien L-279")
@@ -522,22 +522,29 @@ class Model():
         fetch = self.run_query(query)
         return fetch
     
-    def topLevel_admin_interface_delete(self):
-        # testeando seleccion
-        if self.table_selection_question_sup(): pass
-        else: 
-            self.messageShow("Se debe seleccionar un registro de la tabla supervisor", 2)
+    def get_trabajadores_supervisor(self, id_sup):
+        query = "SELECT id_area, nombre_area FROM areas_trabajo_kino WHERE id_supervisor = %s"
+        fetch = self.run_query(query, (id_sup, ))
+        print(fetch)
+        if fetch == []: 
+            print("El supervisor no tiene areas a su cargo")
+            return []
+        elif isinstance(fetch, str): 
+            print(f"{fetch} dato al obtener areas del sup")
+        trabajadores_del_sup = []
+        for area in fetch:
+            rowQ = "SELECT * FROM personal_laborando WHERE id_area = %s"
+            rowF = self.run_query(rowQ, (area[0], ))
+            for chambers in rowF:
+                trabajadores_del_sup.append(chambers)
+        if trabajadores_del_sup == []:
+            print(f" No hay trabajadores")
             return
-        # Llamando query para eliminar data
-        select_data = self.select_admin_table_sup()
-        if len(select_data) > 0: 
-            if self.messageAsk(f"Esta seguro de eliminar el registro {select_data}"):
-                self.admin_query_customThree(3, old_info = select_data)
+        elif isinstance(trabajadores_del_sup, str): 
+            print(trabajadores_del_sup)
+            return
         else:
-            self.messageShow("Error, debe seleccionar una fila", 2)
-            return
-        # Actualizando tabla
-        self.fill_admin_table_sup()
+            return trabajadores_del_sup
     
     def fill_admin_table(self):
         # limpiamos tabla
