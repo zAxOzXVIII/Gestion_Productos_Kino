@@ -213,23 +213,27 @@ class Model():
     def create_qr_code(self):
         # Seleccionando valores
         try:
-            self.tablero_sup.item(self.tablero_sup.selection())["text"]
+            id_b = self.tablero_sup.item(self.tablero_sup.selection())["text"]
+            cnt = self.tablero_sup.item(self.tablero_sup.selection())["values"][0]
+            num_c = self.tablero_sup.item(self.tablero_sup.selection())["values"][1]
+            desc_b = self.tablero_sup.item(self.tablero_sup.selection())["values"][2]
+            val = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
         except IndexError as E:
             self.messageShow("No se a seleccionado ningun registro", 2)
             return
         # asignando valores a variables de la tabla
-        id_b = self.tablero_sup.item(self.tablero_sup.selection())["text"]
-        num_c = self.tablero_sup.item(self.tablero_sup.selection())["values"][1]
-        cnt = self.tablero_sup.item(self.tablero_sup.selection())["values"][0]
-        val = self.tablero_sup.item(self.tablero_sup.selection())["values"][3]
-        
         try:
             fecha = datetime.now()
             fecha_m = f"{fecha.year}_{fecha.month}_{fecha.day}"
-            
-            name_code = f"ID_B{id_b}NM_C{num_c}C{cnt}V{val}"
+            palabras = desc_b.split()
+            if palabras:
+                bien = palabras[0]
+            else:
+                print(f"No hay data del bien {palabras}")
+                return
+            name_code = f"ID_B{id_b}{bien}"
             # tupla que guardara informacion para la query del QR que se subira a la tabla
-            data_query = (name_code, str(id_b), str(cnt))
+            data_query = (name_code, str(id_b))
             # query
             self.up_qrcode_table(data_query)
             name_img = f"IMG_Code_ID{id_b}_{fecha_m}"
@@ -249,7 +253,8 @@ class Model():
             return
     
     def up_qrcode_table(self, parameters = ()):
-        query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ? AND cantidad = ?"
+        query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ?"
+        print(parameters)
         filas = self.run_query(query, parameters, opc = 2)
         if isinstance(filas, int): self.messageShow(f"Se actualizaron {filas}")
         else: print(filas)
@@ -424,7 +429,9 @@ class Model():
             if isinstance(rowcount, int):
                 self.messageShow(f"Se elimino el bien {old_values}")
                 self.rellenar_tabla_sup(id_data_r)
-        else: self.messageshow("Se revirtieron las acciones")
+        else: 
+            self.messageShow("Se revirtieron las acciones")
+            return
     
     def delete_zone_tpl(self):
         old_values = self.selec_zone_admin_table()
@@ -447,6 +454,9 @@ class Model():
         else: self.messageShow(f"Error {fetch}", 2)
     
     def query_update_zone(self, parameters = ()):
+        if parameters[0] == "" and parameters[1] == "":
+            self.messageShow(f"Debe llenar los campos correspondientes", 2)
+            return
         id_sup = self.get_id_sup_byCi(parameters[2])
         values = (parameters[0], parameters[1], id_sup, parameters[3], parameters[4], )
         print(values)
@@ -458,6 +468,9 @@ class Model():
         else: self.messageShow(f"{rowcount} error...")
     
     def query_add_zone(self, parameters = ()):
+        if parameters[0] == "" and parameters[1] == "":
+            self.messageShow(f"Debe llenar los campos correspondientes", 2)
+            return
         id_sup = self.get_id_sup_byCi(parameters[2])
         values = (parameters[0], parameters[1], str(id_sup), )
         print(values)

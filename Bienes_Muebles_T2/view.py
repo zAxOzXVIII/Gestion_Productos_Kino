@@ -17,7 +17,7 @@ class View(Model):
         print(type(self.window))
         # self.window.geometry("640x480")
         self.window.title("Bienes Muebles Kino Tachira")
-        # self.window.rezisable(width=None, height=None)
+        self.window.resizable(width=False, height=False)
         
         # Label Titulo Main
         label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
@@ -212,6 +212,7 @@ class View(Model):
         # entablando heading
         self.tablero_sup["columns"] = ("col0", "col1", "col2", "col3", "col4")
         # asignando valores a las columnas
+        self.tablero_sup.heading(column = "#0", text="ID")
         self.tablero_sup.heading(column = "col0", text="Cantidad")
         self.tablero_sup.heading(column = "col1", text="Numero de consultas")
         self.tablero_sup.heading(column = "col2", text="Descripcion del item")
@@ -299,7 +300,7 @@ class View(Model):
         self.worker_toplevel_sup.title("Ventana de trabajadores")
         # focus
         self.worker_toplevel_sup.grab_set()
-        self.worker_toplevel_sup.geometry("900x400")
+        # self.worker_toplevel_sup.geometry("900x400")
         # tablero que muestra trabajadores actuales
         Label(self.worker_toplevel_sup, text = f"Tablero de empleados actuales a cargo de {name_sup}").grid(row=0, column=0, columnspan=2)
         self.table_workers_sup = ttk.Treeview(self.worker_toplevel_sup, height=10)
@@ -431,12 +432,12 @@ class View(Model):
         except Exception as e:
             self.messageShow("Favor seleccionar un registro para actualizar", 2)
             return
-        # configurando validaciones
-        validacion_limiteStr = self.ventana_act_sup.register(self.validacion_limite_str)
-        validacion_limiteInt = self.ventana_act_sup.register(self.validacion_limite_int)
         # Generamos nueva ventana para actualizar data
         self.ventana_act_sup = Toplevel(self.window)
         self.ventana_act_sup.title("Actualizar data de registros")
+        # configurando validaciones
+        validacion_limiteStr = self.ventana_act_sup.register(self.validacion_limite_str)
+        validacion_limiteInt = self.ventana_act_sup.register(self.validacion_limite_int)
         # Asignando formulario
         Label(self.ventana_act_sup, text="Formulario para actualizar data\ndel registro seleccionado").grid(row=0, column=0, columnspan=2)
         Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}").grid(row=0, column=2)
@@ -558,7 +559,7 @@ class View(Model):
     def zone_admin(self):
         # Generando toplevel
         self.zona_toplevel = Toplevel(self.window)
-        self.zona_toplevel.geometry("800x600")
+        # self.zona_toplevel.geometry("800x600")
         self.zona_toplevel.title("Zonas de trabajo")
         # focus a la toplevel
         self.zona_toplevel.grab_set()
@@ -601,12 +602,12 @@ class View(Model):
         # widgedts
         Label(self.zona_toplevel, text="Nombre de area").grid(row=0, column=0)
         Label(self.zona_toplevel, text=f"area actual = {old_values[0]}", relief="sunken").grid(row=1, column=1)
-        nm_area = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
+        nm_area = ttk.Entry(self.zona_toplevel, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_area.grid(row=1, column=0, pady=8)
         
         Label(self.zona_toplevel, text="Codigo de area").grid(row=2, column=0)
         Label(self.zona_toplevel, text=f"codigo actual ={old_values[1]}", relief="sunken").grid(row=3, column=1)
-        cdg_area = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
+        cdg_area = ttk.Entry(self.zona_toplevel, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         cdg_area.grid(row=3, column=0, pady=8)
         # busqueda id -> cedula supervisor
         ci_id = self.query_busqueda_sup_zone(old_values[2])
@@ -638,11 +639,11 @@ class View(Model):
         validacion_limiteInt = self.zona_toplevel.register(self.validacion_limite_int)
         # agregando widgets al toplevel
         Label(self.zona_toplevel, text="Agregar el nombre del area de trabajo").grid(row=0, column=0, pady=10)
-        nm_a = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 42))
+        nm_a = ttk.Entry(self.zona_toplevel, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
         nm_a.grid(row=0, column=1, pady=10)
         
         Label(self.zona_toplevel, text="Agregar el codigo del area de trabajo").grid(row=1, column=0, pady=10)
-        cdg_a = ttk.Entry(self.zona_toplevel, valdate="key", validatecommand=(validacion_limiteStr, "%P", 16))
+        cdg_a = ttk.Entry(self.zona_toplevel, validate="key", validatecommand=(validacion_limiteStr, "%P", 16))
         cdg_a.grid(row=1, column=1, pady=10)
         
         Label(self.zona_toplevel, text="Seleccionar supervisor designado para el area").grid(row=2, column=0, pady=10)
