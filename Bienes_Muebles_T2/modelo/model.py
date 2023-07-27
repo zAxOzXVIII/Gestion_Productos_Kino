@@ -44,14 +44,14 @@ class Model():
                 cursor.execute(query, parameters)
                 conn.commit()
                 fetch = cursor.fetchall()
-                print(fetch, "l69")
+                # print(fetch, "l69")
                 return fetch
             except mdb.Error as e:
                 message = f"Alert Error: {e}"
                 return message
             finally:
                 conn.close()
-                print("Se ha finalizado la conexion")
+                # print("Se ha finalizado la conexion")
         elif opc == 2:
             try:
                 conn = mdb.connect(host="127.0.0.1", user="root", 
@@ -61,14 +61,24 @@ class Model():
                 cursor.execute(query, parameters)
                 conn.commit()
                 rowcount = cursor.rowcount #Arreglado
-                print(rowcount, "l86")
+                # print(rowcount, "l86")
                 return rowcount
             except mdb.Error as e:
                 message = f"Alert Error: {e}"
                 return message
             finally:
                 conn.close()
-                print("Se ha finalizado la conexion")
+                # print("Se ha finalizado la conexion")
+    
+    def selec_zone_admin_table(self):
+        try:
+            nm_area_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][0]
+            cdg_zona_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][1]
+            id_sup_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][2]
+            return (nm_area_old, cdg_zona_old, str(id_sup_old))
+        except Exception as e:
+            self.messageShow(f"{e} debe seleccionar una fila", 2)
+            return None
     
     def validacion_limite_str(self, text, limite):
         if len(text) < int(limite):
@@ -195,21 +205,13 @@ class Model():
                 WHERE id_bienes = ?"""
         parameters = (cnt.get(), nm_c.get(), desc_item.get(), val.get(), obs.get(), id_b, )
         params = (cnt, nm_c, desc_item, val, obs, id_b)
-        if self.validar_valor_flotante(val.get()) or self.validar_valor_entero(val.get()):
             # Pregunta de verificacion
-            if self.messageAsk("Esta seguro que desea modificar los valores?\nNo hay vuelta atras para esta acción"):
-                fila = self.run_query(query, parameters, 2)
-                if isinstance(fila, int):
-                    self.messageShow(f"Todo salio correcto\n se actualizaron {fila} filas")
-                    for i in range(5):
-                        params[i].delete(0, "end")
-                else: self.messageShow(f"Se ha detectado un error: {fila}", 2)
-            else:
-                self.messageShow("Correcto se revirtio la accion")
-                return
-        else: 
-            self.messageShow("Verificar que el valor del precio sea numerico", 2)
-            return
+        fila = self.run_query(query, parameters, 2)
+        if isinstance(fila, int):
+            for i in range(5):
+                params[i].delete(0, "end")
+            return fila
+        else: return fila
     
     def create_qr_code(self):
         # Seleccionando valores
@@ -251,14 +253,14 @@ class Model():
             img.save(self.obtener_directorio() + "\\config\\images_Qr\\" + name_img + ".png")
         except Exception as e:
             print(e)
-            return
+            return e
     
     def up_qrcode_table(self, parameters = ()):
         query="UPDATE bienes_por_zona SET codigo_qr = ? WHERE id_bienes = ?"
-        print(parameters)
+        # print(parameters)
         filas = self.run_query(query, parameters, opc = 2)
         if isinstance(filas, int): self.messageShow(f"Se actualizaron {filas}")
-        else: print(filas)
+        # else: print(filas)
     
     def log_adm_sesion(self, user, password):
         if user=="" and password=="":
@@ -287,7 +289,7 @@ class Model():
             self.admin_table_sup.delete(element)
         
         busqueda_personalizada = f"{w_quest}"
-        print(busqueda, "\n", busqueda_personalizada)
+        # print(busqueda, "\n", busqueda_personalizada)
         if len(busqueda) <= 0:
             query = f"SELECT * FROM supervisor_area_kino WHERE {busqueda_personalizada}"
             fetch = self.run_query(query)
@@ -320,16 +322,6 @@ class Model():
         fetch = self.run_query(query)
         return fetch
     
-    def selec_zone_admin_table(self):
-        try:
-            nm_area_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][0]
-            cdg_zona_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][1]
-            id_sup_old = self.zone_treeView.item(self.zone_treeView.selection())["values"][2]
-            return (nm_area_old, cdg_zona_old, str(id_sup_old))
-        except Exception as e:
-            self.messageShow(f"{e} debe seleccionar una fila", 2)
-            return 0
-    
     def delete_workers_sup(self, id_areasT : list):
         # pedir la data
         old_values = self.selec_workers_table()
@@ -355,32 +347,32 @@ class Model():
                 entry.delete(0, "end")
         else: 
             self.messageShow(f"Ocurrio un error al insertar, por favor llene todas las casillas", 2)
-            print(rowcount)
+            # print(rowcount)
     
     def query_update_worker(self, parameters = (), old_params = ()):
         params_get = (parameters[0].get(), parameters[1].get(), parameters[2].get(), parameters[3].get(), parameters[4].get())
         query = """UPDATE personal_laborando
                     SET nombre = %s, apellido = %s, cedula = %s, fecha_nacimiento = %s, id_area = %s
-                    WHERE nombre = %s AND cedula = %s"""
-        tlt_params = params_get + (old_params[0], old_params[2], )
-        rowcount = self.run_query(query, tlt_params)
-        if rowcount > 0 and isinstance(rowcount, int):
-            self.messageShow(f"Se actualizo {rowcount} empleado")
+                    WHERE id_persona = %s """
+        tlt_params = params_get + old_params
+        rowcount = self.run_query(query, tlt_params, 2)
+        if isinstance(rowcount, int):
             # limpiando entrys
             for entry in parameters:
                 entry.delete(0, "end")
+                return rowcount
         else: 
-            self.messageShow(f"Ocurrio un error al actualizar, por favor llene todas las casillas", 2)
-            print(rowcount)
+            return rowcount
     
     def selec_workers_table(self):
         try:
+            id_worker = self.table_workers_sup.item(self.table_workers_sup.selection())["text"]
             nm_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][0]
             lnm_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][1]
             ci_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][2]
             date_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][3]
             id_a_worker_old = self.table_workers_sup.item(self.table_workers_sup.selection())["values"][4]
-            old_values = (nm_worker_old, lnm_worker_old, ci_worker_old, date_worker_old, id_a_worker_old)
+            old_values = (nm_worker_old, lnm_worker_old, ci_worker_old, date_worker_old, id_a_worker_old, id_worker)
             return old_values
         except Exception as e:
             self.messageShow(f"{e} | debe seleccionar una fila de trabajadores", 2)
@@ -404,16 +396,12 @@ class Model():
             query = """INSERT INTO bienes_por_zona(cantidad, num_cons, desc_item, valor, observacion, id_area)
                         VALUES(%s, %s, %s, %s, %s, %s)"""
             rowcount = self.run_query(query, params_get, 2)
-            print(rowcount)
             if isinstance(rowcount, int):
-                self.messageShow(f"Se agrego {rowcount} filas")
                 for entry in params:
                     entry.delete(0, "end")
+                return rowcount
             else:
-                self.messageShow(f"error: {rowcount}", 2)
-        else:
-            self.messageShow("Verificar la entrada de valor Bs que sea numerico", 2)
-            return
+                return rowcount
     
     def get_zonas_sup_bienes(self, params=()):
         query = "SELECT nombre_area, id_area FROM areas_trabajo_kino WHERE id_supervisor = %s"
@@ -434,13 +422,11 @@ class Model():
             self.messageShow("Se revirtieron las acciones")
             return
     
-    def delete_zone_tpl(self):
-        old_values = self.selec_zone_admin_table()
-        if old_values == 0: return
+    def delete_zone_tpl(self, old_values):
+        if old_values == None: return
         # datos
-        query = "DELETE FROM areas_trabajo_kino WHERE nombre_area = %s AND codigo_zona = %s AND id_supervisor = %s"
+        query = "UPDATE areas_trabajo_kino SET nombre_area = 'Vacio', codigo_zona='Vacio', id_supervisor='Libre' WHERE nombre_area = %s AND codigo_zona = %s AND id_supervisor = %s"
         rowcount = self.run_query(query, old_values, 2)
-        self.back_zone_toplevel()
         return rowcount
     
     def query_busqueda_sup_zone(self, ci_old : str):
@@ -460,7 +446,7 @@ class Model():
             return
         id_sup = self.get_id_sup_byCi(parameters[2])
         values = (parameters[0], parameters[1], id_sup, parameters[3], parameters[4], )
-        print(values)
+        # print(values)
         query = "UPDATE areas_trabajo_kino SET nombre_area= %s, codigo_zona = %s, id_supervisor= %s WHERE nombre_area= %s AND codigo_zona = %s"
         rowcount = self.run_query(query, values, 2)
         if isinstance(rowcount, int): 
@@ -474,7 +460,7 @@ class Model():
             return
         id_sup = self.get_id_sup_byCi(parameters[2])
         values = (parameters[0], parameters[1], str(id_sup), )
-        print(values)
+        # print(values)
         query = "INSERT INTO areas_trabajo_kino(nombre_area, codigo_zona, id_supervisor) VALUES (%s, %s, %s)"
         rowcount = self.run_query(query, values, 2)
         if isinstance(rowcount, int): 
@@ -487,7 +473,7 @@ class Model():
         fetch = self.run_query(query, parameters)
         if isinstance(fetch, list) and len(fetch) > 0: 
             self.main_sup_panel(str(fetch[0][0]), fetch[0][1])
-            
+            self.messageShow("Bienvenido, su sesion a sido verificada con exito")
         else:
             self.messageShow(f"No coincide la sesion, please try again")
             return
@@ -508,8 +494,8 @@ class Model():
         # tupla grande 
         update_info = new_info + old_info
         # imprimiendo valores
-        print("Valores old_info L533", old_info)
-        print("Valores new_info L534", new_info)
+        # print("Valores old_info L533", old_info)
+        # print("Valores new_info L534", new_info)
         if opc == 1:
             query = "INSERT INTO supervisor_area_kino(nombre, apellido, cedula) VALUES(?, ?, ?)"
             fila = self.run_query(query, new_info, 2)
@@ -520,7 +506,7 @@ class Model():
             query = f"UPDATE supervisor_area_kino SET nombre = ?, apellido = ?, cedula = ? WHERE nombre = ? AND apellido = ? AND cedula = ?"
             fila = self.run_query(query, update_info, 2)
             if isinstance(fila, int) == True: 
-                self.three_message_interface(self.update_window, "La actualizacion salio bien")
+                return fila
             else: return fila
         elif opc == 3:
             query = f"DELETE FROM supervisor_area_kino WHERE nombre = ? AND apellido = ? AND cedula = ? AND id_supervisor = ?"
@@ -537,7 +523,7 @@ class Model():
     def get_trabajadores_supervisor(self, id_sup):
         query = "SELECT id_area, nombre_area FROM areas_trabajo_kino WHERE id_supervisor = %s"
         fetch = self.run_query(query, (id_sup, ))
-        print(fetch)
+        # print(fetch)
         if fetch == []: 
             print("El supervisor no tiene areas a su cargo")
             return []
@@ -553,7 +539,7 @@ class Model():
             print(f" No hay trabajadores")
             return
         elif isinstance(trabajadores_del_sup, str): 
-            print(trabajadores_del_sup)
+            # print(trabajadores_del_sup)
             return
         else:
             return trabajadores_del_sup
@@ -567,7 +553,7 @@ class Model():
         
         query = "SELECT * FROM administrador"
         fetch = self.run_query(query)
-        print(fetch, type(fetch))
+        # print(fetch, type(fetch))
         if isinstance(fetch, list):
             for row in fetch:
                 # Debemos proteger la contraseña por lo que la incriptaremos
@@ -583,20 +569,18 @@ class Model():
         return rowcount
     # query para borrar administrador ->modelo
     
-    def toplevel_admin_deleteW(self):
-        try:
-            self.table_admin_data.item(self.table_admin_data.selection())["text"]
-            self.table_admin_data.item(self.table_admin_data.selection())["values"][0]
-        except IndexError as e:
-            self.messageShow(e, 2)
-            return
-        
-        id_admin = self.table_admin_data.item(self.table_admin_data.selection())["text"]
-        user = self.table_admin_data.item(self.table_admin_data.selection())["values"][0]
-        password = self.table_admin_data.item(self.table_admin_data.selection())["values"][1]
-        old_data = (user, id_admin)
-        
+    def toplevel_admin_deleteW(self, data_old):
         query = "DELETE FROM administrador WHERE usuario = ? AND id_sesion_admin = ?"
-        rowcount = self.run_query(query, old_data, 2)
+        rowcount = self.run_query(query, data_old, 2)
         return rowcount
+    
+    def query_tomar_data_bienes(self, id_area = ()):
+        bienes = []
+        for areas in id_area:
+            query = "SELECT * FROM bienes_por_zona WHERE id_area = %s"
+            fetch = self.run_query(query, (areas, ))
+            bienes.append(fetch)
+        return bienes
 
+# objeto = Model()
+# print(objeto.query_tomar_data_bienes((1, 2)))

@@ -2,6 +2,9 @@
 # importando libreria Pillow - convert image
 import PIL as pil
 from PIL import ImageTk
+# Excel
+from openpyxl import Workbook
+from openpyxl.styles import Font, Border, Side 
 # importando libreria grafica Tkainter
 from tkinter import ttk, Label, Entry, Toplevel, CENTER
 from tkinter import messagebox
@@ -9,27 +12,29 @@ from tkcalendar import DateEntry
 # importando modelo
 from modelo.model import Model
 from controlador.controller import Controlador
+# os
+import os
 # fin de librerias
 # Declarando clase vista
 class View(Model):
     
     def __init__(self, window):
         self.window = window
-        print(type(self.window))
+        # print(type(self.window))
         # self.window.geometry("640x480")
         self.window.title("Bienes Muebles Kino Tachira")
         self.window.resizable(width=False, height=False)
         self.controlador = Controlador()
         # Label Titulo Main
-        label_panel = Label(self.window, text="Panel de Usuarios").grid(row=0, column=0, columnspan=2)
-        Label(self.window, text="Sesion Administrador").grid(row=1, column=0)
-        boton_admin = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_admin).grid(row=1, column=1)
+        label_panel = Label(self.window, text="Panel de Usuarios", font=("Arial", 20, "bold")).grid(row=0, column=0, columnspan=2, pady=(20,0))
+        Label(self.window, text="Sesion Administrador").grid(row=1, column=0, pady=(25,6))
+        boton_admin = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_admin).grid(row=1, column=1, pady=(25,6), padx=(0, 15))
         
-        Label(self.window, text="Sesion supervisor").grid(row=2, column=0)
-        boton_sup = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_sup).grid(row=2, column=1)
+        Label(self.window, text="Sesion supervisor").grid(row=2, column=0, pady=(6,6))
+        boton_sup = ttk.Button(self.window, text="Iniciar Sesion", command = self.toplevel_login_sup).grid(row=2, column=1, pady=(6,6), padx=(0, 15))
         
-        Label(self.window, text="Publico").grid(row=3, column=0)
-        boton_public = ttk.Button(self.window, text="Ingresar", command=self.sesion_public_main).grid(row=3, column=1)
+        Label(self.window, text="Publico").grid(row=3, column=0, pady=(6,15))
+        boton_public = ttk.Button(self.window, text="Ingresar", command=self.sesion_public_main).grid(row=3, column=1, pady=(6,15), padx=(0, 15))
         # Pie de ventana
         self.pie_pagina(0, 1)
         
@@ -50,7 +55,7 @@ class View(Model):
         lbl_img.imagen = img_tk
         
         # Label texto
-        texto = "Requerimientos para Graduarse de TSU\nMarden Barrera V-30262472\nElio Sebas V-XXXXX\nDaniela Simanca V-XXXXX"
+        texto = "Requerimientos para Graduarse de TSU\nMarden Barrera V-30262472\nElio Gutiérrez V-31509689\nDaniela Simanca V-26987707"
         copy = Label(self.window, text=texto).grid(row=num_filas, column=p1)
     
     def messageShow(self, msg : str, opc = 1):
@@ -129,6 +134,7 @@ class View(Model):
     def toplevel_login_admin(self):
         self.toplevel_admin = Toplevel()
         self.toplevel_admin.title("Sesion de Administrador")
+        self.toplevel_admin.resizable(width=False, height=False)
         # configurando validaciones
         validacion_limiteStr = self.toplevel_admin.register(self.validacion_limite_str)
         self.toplevel_admin.grab_set()
@@ -185,6 +191,7 @@ class View(Model):
     def toplevel_login_sup(self):
         self.sesion_level = Toplevel(self.window)
         self.sesion_level.title("Inicio de sesion del supervisor de area")
+        self.sesion_level.resizable(width=False, height=False)
         # focus
         self.sesion_level.grab_set()
         # configurando validaciones
@@ -237,20 +244,23 @@ class View(Model):
         # funcion
         self.rellenar_tabla_sup(id_area)
         # Botones
-        ttk.Button(self.window, text="Actualizar Datos", command = self.up_data_sup).grid(row=4, column=0)
+        ttk.Button(self.window, text="Actualizar Datos", command = lambda : self.up_data_sup(id_area)).grid(row=4, column=0)
         ttk.Button(self.window, text="Generar Codigo Qr", command = self.create_qr_code).grid(row=4, column=1)
         ttk.Button(self.window, text="Salir", command = self.label_main).grid(row=4, column=2)
         # bienes
         ttk.Button(self.window, text="Empleados configuracion", command = lambda : self.main_worker_tpl(name, id_area)).grid(row=1, column=3)
-        ttk.Button(self.window, text="Agregar Bienes", command = lambda : self.add_bn_tpl(id_sup)).grid(row=2, column=3)
+        ttk.Button(self.window, text="Agregar Bienes", command = lambda : self.add_bn_tpl(id_sup, id_area)).grid(row=2, column=3)
         ttk.Button(self.window, text="Eliminar Bienes", command = lambda : self.delete_bn_query(id_area)).grid(row=3, column=3)
+        # Generar Excel button
+        ttk.Button(self.window, text="Generar registro de bienes", command = lambda : self.generar_excel()).grid(row=4, column=0, columnspan=4)
         # pie de pagina
         self.pie_pagina(0, 3)
     
-    def add_bn_tpl(self, sup_id):
+    def add_bn_tpl(self, sup_id, id_ar):
         # Generando top level
         self.bienes_add_topl = Toplevel()
         self.bienes_add_topl.title("Ventana para agregar bienes")
+        self.bienes_add_topl.resizable(width=False, height=False)
         # configurando validaciones
         validacion_limiteStr = self.bienes_add_topl.register(self.validacion_limite_str)
         validacion_limiteInt = self.bienes_add_topl.register(self.validacion_limite_int)
@@ -270,7 +280,7 @@ class View(Model):
         descI_bn.grid(row=5, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite valor del bienmueble").grid(row=6, column=0, columnspan=2)
-        val_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteStr, "%P", 8))
+        val_bn = ttk.Entry(self.bienes_add_topl, validate="key", validatecommand=(validacion_limiteInt, "%P", 8))
         val_bn.grid(row=7, column=0, padx=10)
         
         Label(self.bienes_add_topl, text="Digite observacion").grid(row=8, column=0, columnspan=2)
@@ -286,19 +296,22 @@ class View(Model):
         zon_bn.set(lista_zonas[0])
         zon_bn.grid(row=11, column=0, padx=10)
         # botones
-        ttk.Button(self.bienes_add_topl, text="Agregar", command = lambda : self.query_add_bienes(params = (cnt_bn,
-                                                                                                            nmC_bn,
-                                                                                                            descI_bn,
+        ttk.Button(self.bienes_add_topl, text="Agregar", command = lambda : self.add_biees_vie(id_ar,(cnt_bn, nmC_bn, descI_bn,
                                                                                                             val_bn,
                                                                                                             obs_bn,
                                                                                                             zon_bn
                                                                                                             ))).grid(row=12, column=0)
         ttk.Button(self.bienes_add_topl, text="Volver", command = lambda : self.bienes_add_topl.destroy()).grid(row=12, column=1)
     
+    def add_biees_vie(self, id_area, par=()):
+        val = self.controlador.query_add_bienes_control(par)
+        if val == True: self.rellenar_tabla_sup(id_area)
+    
     def main_worker_tpl(self, name_sup : str, id_areas = []):
         # predefiniendo nuevo toplevel
         self.worker_toplevel_sup = Toplevel(self.window)
         self.worker_toplevel_sup.title("Ventana de trabajadores")
+        self.worker_toplevel_sup.resizable(width=False, height=False)
         # focus
         self.worker_toplevel_sup.grab_set()
         # self.worker_toplevel_sup.geometry("900x400")
@@ -332,6 +345,9 @@ class View(Model):
         self.main_worker_tpl(name_supT, id_areasT)
     
     def add_workers_sup(self, name_supT : str, id_areasT = []):
+        if name_supT == "":
+            messagebox.showwarning("Advertencia del sistema", "No hay data del supervisor")
+            return
         # limpiar ventana toplevel workers
         self.limpiar_ventana(4)
         # configurando validaciones
@@ -364,7 +380,7 @@ class View(Model):
         combo_id.set(lista[0])
         combo_id.grid(row=4, column=1)
         # agregar
-        ttk.Button(self.worker_toplevel_sup, text="Agregar", command = lambda : self.query_add_worker(parameters = (nm_w,
+        ttk.Button(self.worker_toplevel_sup, text="Agregar", command = lambda : self.controlador.query_add_worker_control((nm_w,
                                                                                                                     lnm_w,
                                                                                                                     ci_w,
                                                                                                                     date_w,
@@ -410,13 +426,14 @@ class View(Model):
         combo_id = ttk.Combobox(self.worker_toplevel_sup, values=lista)
         combo_id.set(lista[0])
         combo_id.grid(row=4, column=1)
+        # data
+        id_worker = (old_data[5], )
         # agregar
-        ttk.Button(self.worker_toplevel_sup, text="Actualizar", command = lambda : self.query_update_worker(parameters = (nm_w,
+        ttk.Button(self.worker_toplevel_sup, text="Actualizar", command = lambda : self.controlador.update_workers_sup_control((nm_w,
                                                                                                                     lnm_w,
                                                                                                                     ci_w,
                                                                                                                     date_w,
-                                                                                                                    combo_id), 
-                                                                                                            old_params = old_data)).grid(row=5, column = 0, padx=2, pady=15)
+                                                                                                                    combo_id), id_worker)).grid(row=5, column = 0, padx=2, pady=15)
         # regresar
         ttk.Button(self.worker_toplevel_sup, text="Regresar", command = lambda : self.back_workers_tpl(name_supT, id_areasT)).grid(row=5, column=1, padx=2, pady=15)
     
@@ -424,7 +441,7 @@ class View(Model):
         self.worker_toplevel_sup.grab_release()
         self.worker_toplevel_sup.destroy()
     
-    def up_data_sup(self):
+    def up_data_sup(self, iderA):
         # Verificamos que seleccione un registro
         try:
             # Generando variables de tablero
@@ -436,41 +453,51 @@ class View(Model):
         # Generamos nueva ventana para actualizar data
         self.ventana_act_sup = Toplevel(self.window)
         self.ventana_act_sup.title("Actualizar data de registros")
+        self.ventana_act_sup.resizable(width=False, height=False)
+        self.ventana_act_sup.grab_set()
         # configurando validaciones
         validacion_limiteStr = self.ventana_act_sup.register(self.validacion_limite_str)
         validacion_limiteInt = self.ventana_act_sup.register(self.validacion_limite_int)
         # Asignando formulario
         Label(self.ventana_act_sup, text="Formulario para actualizar data\ndel registro seleccionado").grid(row=0, column=0, columnspan=2)
-        Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}").grid(row=0, column=2)
+        Label(self.ventana_act_sup, text=f"Identificador de la fila seleccionada {id_product}").grid(row=0, column=2, pady=5)
         
-        Label(self.ventana_act_sup, text="Cantidad").grid(row=1, column=0)
+        Label(self.ventana_act_sup, text="Cantidad").grid(row=1, column=0, pady=5)
         cnt = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 4))
-        cnt.grid(row=1, column=1)
+        cnt.focus()
+        cnt.grid(row=1, column=1, pady=5)
         
-        Label(self.ventana_act_sup, text="Numero de consultas").grid(row=2, column=0)
+        Label(self.ventana_act_sup, text="Numero de consultas").grid(row=2, column=0, pady=5)
         nm_c = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 6))
-        nm_c.grid(row=2, column=1)
+        nm_c.grid(row=2, column=1, pady=5)
         
-        Label(self.ventana_act_sup, text="Descripcion del item").grid(row=3, column=0)
+        Label(self.ventana_act_sup, text="Descripcion del item").grid(row=3, column=0, pady=5)
         desc_item = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 64))
-        desc_item.grid(row=3, column=1)
+        desc_item.grid(row=3, column=1, pady=5)
         
-        Label(self.ventana_act_sup, text="Valor").grid(row=4, column=0)
-        val = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 8))
-        val.grid(row=4, column=1)
+        Label(self.ventana_act_sup, text="Valor").grid(row=4, column=0, pady=5)
+        val = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteInt, "%P", 8))
+        val.grid(row=4, column=1, pady=5)
         
-        Label(self.ventana_act_sup, text="Observacion").grid(row=5, column=0)
+        Label(self.ventana_act_sup, text="Observacion").grid(row=5, column=0, pady=5)
         obs = Entry(self.ventana_act_sup, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
-        obs.grid(row=5, column=1)
+        obs.grid(row=5, column=1, pady=5)
         # Falta agregar botones, y hacer las consultas update
         # Botones
-        ttk.Button(self.ventana_act_sup, text="Actualizar", command= lambda : self.act_data_sup_query(cnt,
+        ttk.Button(self.ventana_act_sup, text="Actualizar", command= lambda : self.actualizar_bien_vista(iderA, cnt,
                                                                                                         nm_c,
                                                                                                         desc_item,
                                                                                                         val,
                                                                                                         obs,
                                                                                                         id_product,
                                                                                                         num_cons)).grid(row=6, column=0, columnspan=2, pady=15)
+    
+    def actualizar_bien_vista(self, id_area, cnt, nm_c, desc_item, val, obs, id_b, num_c):
+        val = self.controlador.act_data_sup_query_control(cnt, nm_c, desc_item, val, obs, id_b, num_c)
+        if val == None:
+            self.rellenar_tabla_sup(id_area)
+        else:
+            messagebox.showerror("Error", f"{val}")
     
     def w_admin_main(self, user):
         # Asignando a main
@@ -514,12 +541,12 @@ class View(Model):
         select_data = self.select_admin_table_sup()
         if isinstance(select_data, tuple):
             supervisor_id = select_data[3]
-            print(supervisor_id)
+            # print(supervisor_id)
         else: 
             self.messageShow("Error, debe seleccionar una fila", 2)
             return
         empleados = self.get_trabajadores_supervisor(supervisor_id)
-        print(empleados)
+        # print(empleados)
         if empleados != []:
             self.messageShow("Se le advierte que no se puede eliminar\n ya que el supervisor tiene empleados a su\n cargo", 2)
             self.empleados_sup_mensaje(empleados)
@@ -536,6 +563,7 @@ class View(Model):
     def empleados_sup_mensaje(self, data = []):
         toplevel_message = Toplevel()
         toplevel_message.title("Lista de empleados al cargo del sup ")
+        toplevel_message.resizable(width=False, height=False)
         toplevel_message.grab_set()
         
         tabla_empleados = ttk.Treeview(toplevel_message, height=10)
@@ -586,15 +614,19 @@ class View(Model):
         # botones para actualizar, agregar y eliminar datos
         ttk.Button(self.zona_toplevel, text="Agregar zonas", command = self.add_zone_tpl).grid(row=1, column=1)
         ttk.Button(self.zona_toplevel, text="Actualizar zonas", command = self.update_zone_tpl).grid(row=2, column=1)
-        ttk.Button(self.zona_toplevel, text="Eliminar zonas", command = self.delete_zone_tpl).grid(row=3, column=1)
+        ttk.Button(self.zona_toplevel, text="Eliminar zonas", command = self.eliminar_zona).grid(row=3, column=1)
         # Regresar
         ttk.Button(self.zona_toplevel, text="Salir", command = lambda : self.close_zone_admin()).grid(row=4, column=0, columnspan=2)
+    
+    def eliminar_zona(self):
+        if self.controlador.delete_zone_work_admin_control(self.zone_treeView) == None: return
+        self.back_zone_toplevel()
     
     def update_zone_tpl(self):
         # Seleccion
         old_values = self.selec_zone_admin_table()
-        if old_values == 0: return
-        print(old_values)
+        if old_values == None: return
+        # print(old_values)
         # limpiar toplevel
         self.limpiar_ventana(3)
         # configurando validaciones
@@ -682,67 +714,70 @@ class View(Model):
     def topLevel_admin_interface_update(self):
         # Datos anteriores
         old_data = self.select_admin_table_sup()
-        if len(old_data) <= 0:
+        if old_data == None:
             self.messageShow("Se debe seleccionar un registro", 2)
             return
         # testeando seleccion
         self.update_window = Toplevel(self.window)
         self.update_window.title("Agregar datos ventana")
+        self.update_window.resizable(width=False, height=False)
         # configurando validaciones
         validacion_limiteStr = self.update_window.register(self.validacion_limite_str)
         validacion_limiteInt = self.update_window.register(self.validacion_limite_int)
         # agregando labels
-        Label(self.update_window, text=f"Antigua información : {old_data[0]}").grid(row=0, column=0)
-        Label(self.update_window, text="Nombre del supervisor\nQue se actualizará").grid(row=1, column=0)
+        Label(self.update_window, text=f"Antigua información : {old_data[0]}").grid(row=0, column=0, pady=5)
+        Label(self.update_window, text="Nombre del supervisor\nQue se actualizará").grid(row=1, column=0, pady=5)
         name = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
-        name.grid(row=1, column=1)
+        name.grid(row=1, column=1, pady=5)
         
-        Label(self.update_window, text=f"Antigua información : {old_data[1]}").grid(row=2, column=0)
-        Label(self.update_window, text="Apellido del supervisor\nQue se actualizará").grid(row=3, column=0)
+        Label(self.update_window, text=f"Antigua información : {old_data[1]}").grid(row=2, column=0, pady=5)
+        Label(self.update_window, text="Apellido del supervisor\nQue se actualizará").grid(row=3, column=0, pady=5)
         last_name = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 32))
-        last_name.grid(row=3, column=1)
+        last_name.grid(row=3, column=1, pady=5)
         
-        Label(self.update_window, text=f"Antigua información : {old_data[2]}").grid(row=4, column=0)
-        Label(self.update_window, text="Cedula del supervisor\nQue se actualizará").grid(row=5, column=0)
+        Label(self.update_window, text=f"Antigua información : {old_data[2]}").grid(row=4, column=0, pady=5)
+        Label(self.update_window, text="Cedula del supervisor\nQue se actualizará").grid(row=5, column=0, pady=5)
         dni = Entry(self.update_window, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
-        dni.grid(row=5, column=1)
-        
+        dni.grid(row=5, column=1, pady=5)
+        uptd_data = (old_data[0],old_data[1],old_data[2])
         # query
-        ttk.Button(self.update_window, text="Actualizar", command = lambda: self.actualizar_supervisor_vista(old_data,
+        ttk.Button(self.update_window, text="Actualizar", command = lambda: self.actualizar_supervisor_vista(uptd_data,
                                                                                                         name.get(), last_name.get(), dni.get())).grid(row= 6, column=0, columnspan=2)
         
     
     def actualizar_supervisor_vista(self, old_data, name, lastn, dni):
-        if dni == "":
+        if dni == "" and name == "" and lastn == "":
             self.messageShow("Debe llenar los campos", 2)
             return
         else:
-            self.admin_query_customThree(2, old_data, (name, lastn, dni))
+            self.controlador.update_sup_from_admin_control(old_data, name, lastn, dni, self.update_window)
+            self.fill_admin_table_sup()
     
     def topLevel_admin_interface_add(self):
         # ventana add
         self.add_window = Toplevel(self.window)
-        print(type(self.add_window))
+        # print(type(self.add_window))
         self.add_window.title("Ventana de agregar")
+        self.add_window.resizable(width=False, height=False)
+        self.add_window.grab_set()
         # configurando validaciones
         validacion_limiteStr = self.add_window.register(self.validacion_limite_str)
         validacion_limiteInt = self.add_window.register(self.validacion_limite_int)
         # Labels
-        Label(self.add_window, text="Nombre del supervisor nuevo").grid(row=0, column=0)
+        Label(self.add_window, text="Nombre del supervisor nuevo").grid(row=0, column=0, pady=5)
         name = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
-        name.grid(row=0, column=1)
+        name.grid(row=0, column=1, pady=5)
         
-        Label(self.add_window, text="Apellido del supervisor nuevo").grid(row=1, column=0)
+        Label(self.add_window, text="Apellido del supervisor nuevo").grid(row=1, column=0, pady=5)
         last_name = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteStr, "%P", 42))
-        last_name.grid(row=1, column=1)
+        last_name.grid(row=1, column=1, pady=5)
         
-        Label(self.add_window, text="Cedula del supervisor nuevo").grid(row=2, column=0)
+        Label(self.add_window, text="Cedula del supervisor nuevo").grid(row=2, column=0, pady=5)
         dni = Entry(self.add_window, validate="key", validatecommand=(validacion_limiteInt, "%P", 9))
-        dni.grid(row=2, column=1)
+        dni.grid(row=2, column=1, pady=5)
         # data
         # boton
-        btn = ttk.Button(self.add_window, text="Agregar valores", command = lambda : self.admin_query_customThree(1, (),
-                                                                                                                (name.get(), last_name.get(), dni.get())))
+        btn = ttk.Button(self.add_window, text="Agregar valores", command = lambda : self.controlador.add_sup_from_admin_control(name.get(), last_name.get(), dni.get()))
         btn.grid(row=3, column = 0, columnspan=2)
     
     def topLevel_admin_i(self):
@@ -768,7 +803,7 @@ class View(Model):
         ttk.Button(self.toplevel_admin_window, text="Eliminar", command = self.eliminar_admin).grid(row=2, column=1)
     
     def eliminar_admin(self):
-        val = self.controlador.admin_deleteW_control()
+        val = self.controlador.admin_deleteW_control(self.table_admin_data)
         if isinstance(val, int):
             self.fill_admin_table()
         else: return
@@ -794,3 +829,68 @@ class View(Model):
     def volver_toplevel_admin_i(self):
         self.toplevel_admin_window.destroy()
         self.topLevel_admin_i()
+    
+    def generar_excel(self):
+        # data de bienes
+        bienes = self.controlador.query_tomar_data_bienes_controlador()
+        if bienes == None: return
+        # Leer el archivo contador
+        with open('config\\Excels\\contador.txt', 'r') as file:
+            current_count = int(file.read().strip())
+        # sumar
+        current_count+=1
+        # woorkbook
+        book = Workbook()
+        sheet = book.active
+        # Columnas de bienes por zona
+        sheet['A1'] = "ID Bienes"
+        sheet['A1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['B1'] = "ID Area"
+        sheet['B1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['C1'] = "Cantidad"
+        sheet['C1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['D1'] = "Numero de consultas"
+        sheet['D1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['E1'] = "Descripcion del item"
+        sheet['E1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['F1'] = "Valor"
+        sheet['F1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['G1'] = "Observacion"
+        sheet['G1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        sheet['H1'] = "Codigo QR"
+        sheet['H1'].font = Font(name='Arial', size=12, bold=True, italic=False)
+        
+        for i in range(2,len(bienes)):
+            sheet[f'A{i}'] = bienes[i-2][0]
+            sheet[f'B{i}'] = bienes[i-2][1]
+            sheet[f'C{i}'] = bienes[i-2][2]
+            sheet[f'D{i}'] = bienes[i-2][3]
+            sheet[f'E{i}'] = bienes[i-2][4]
+            sheet[f'F{i}'] = bienes[i-2][5]
+            sheet[f'G{i}'] = bienes[i-2][6]
+            sheet[f'H{i}'] = bienes[i-2][7]
+        
+        # Iterar sobre las celdas de la fila 1 desde A1 hasta H1
+        for column in range(1, 9):  # Columnas A hasta H (8 columnas)
+            cell = sheet.cell(row=len(bienes+1), column=column)
+            # Establecer el estilo del borde cuadriculado para cada celda
+            border_style = 'thin'  # Puedes ajustar el grosor del borde si lo deseas
+            border = Border(left=Side(style=border_style),
+                            right=Side(style=border_style),
+                            top=Side(style=border_style),
+                            bottom=Side(style=border_style))
+            cell.border = border
+        
+        name_path = f"Excel_Bienes{current_count:4}"
+        book.save(f"config\\Excels\\{name_path}.xlsx")
+        
+        # Actualizar el valor del contador en el archivo contador.txt
+        with open('config\\Excels\\contador.txt', 'w') as file:
+            file.write(str(current_count))
